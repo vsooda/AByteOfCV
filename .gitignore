@@ -1,2 +1,4 @@
 build
 data
+*.bak
+*.[0a]
