@@ -1,0 +1,4 @@
+to tansform form windows to linux, do the follow change:
+const somethin& => const something
+stl > >> => > > > (salancy.cpp)
+
