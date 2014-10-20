@@ -20,15 +20,15 @@ public:
 	cv::Mat apply(const char* srcName, const char* maskName = NULL, const char* avgName = NULL,
 		const char* extraName1 = NULL, const char* extraName2 = NULL) {
 		init(srcName, maskName, avgName, extraName1);
-		cv::Size sz = src_.size();
-		resize(src_, src_, mask_.size());
+		//cv::Size sz = src_.size();
+		//resize(src_, src_, mask_.size());
 		clock_t a, b;
 		a = clock();
 		doProcess();
 		b = clock();
 		cout << "time: " << (b - a) * 1000.0 / CLOCKS_PER_SEC << " ms" << endl;
 		showResult();
-		resize(dst_, dst_, sz);
+		//resize(dst_, dst_, sz);
 		return dst_;
 	}
 

@@ -2,3 +2,6 @@ build
 data
 *.bak
 *.[0a]
+tags
+*.jpg
+*.png

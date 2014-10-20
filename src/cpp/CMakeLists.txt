@@ -4,7 +4,8 @@ PROJECT(algocv)
 SET(PROJECT_VERSION "0.1")
 set(CMAKE_BUILD_TYPE Debug)
 
-set(OpenCV_DIR "/home/sooda/tools/OpenCV/opencv-2.4.8/build")
+#set(OpenCV_DIR "/home/sooda/tools/OpenCV/opencv-2.4.8/build")
+set(OpenCV_DIR "/home/sooda/OpenCV/opencv-2.4.9/build")
 
 # Opencv Package
 FIND_PACKAGE( OpenCV REQUIRED )
@@ -26,6 +27,7 @@ SET(SRC
  tonemapping.cpp
  3rdparty/maxflow/maxflow.cpp
  3rdparty/maxflow/graph.cpp
+ shape/tps_trans.cpp
 )
 
 

@@ -121,7 +121,7 @@ def readFileNames():
 if __name__ == "__main__":
   #[images, indexes]=readFileNames()
     basepath = '/home/sooda/data/face/'
-    images = glob.glob(basepath + '*.jpg')
+    images = glob.glob(basepath + '*.png')
     cv2.namedWindow('det',  cv2.WINDOW_AUTOSIZE)
     output_path = basepath + "result/"
     print output_path
@@ -146,7 +146,11 @@ if __name__ == "__main__":
              continue
         vis = src.copy()
         draw_rects(vis, rects, (0, 255, 0))
+        left_position = []
+        right_position = []
         for x1, y1, x2, y2 in rects:
+            left_position = []
+            right_position = []
             mid_left = 5 * (x1 + x2) / 9;
             mid_right = 4 * (x1 + x2) / 9;
             roi_left = gray[y1:y2, x1:mid_left]
@@ -172,12 +176,8 @@ if __name__ == "__main__":
             draw_rects(vis_roi, subrects, (255, 255, 0))
         #cv2.imwrite(output_path+img.rstrip().split('/')[-1], vis)
         output_name = output_path+img.rstrip().split('/')[-1];
-        print  left_position
-        print  right_position
-        #cv2.imshow('det', src)
-        #cv2.waitKey()
-        #src_array = np.asarray(src)
-        imgg = Image.open(img)
-        #CropFace(imgg, left_position, right_position, offset_pct=(0.3,0.3), dest_sz=(200,200)).save(output_name)
-        #CropFace(imgg, eye_left=(50,50), eye_right=(100,100), offset_pct=(0.1,0.1), dest_sz=(200,200)).save(output_name)
-        CropFace(imgg, left_position, right_position, offset_pct=(0.3,0.3), dest_sz=(500,600)).save(output_name)
+        if len(left_position) > 0  and len(right_position) > 0:
+            print  left_position
+            print  right_position
+            imgg = Image.open(img)
+            CropFace(imgg, left_position, right_position, offset_pct=(0.3,0.3), dest_sz=(250,300)).save(output_name)

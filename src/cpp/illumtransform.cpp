@@ -66,8 +66,11 @@ namespace customCV {
 				src_1c.copyTo(med1);
 				src_2c.copyTo(med2);
 
-				cvSmooth(&((IplImage)src_1c), &((IplImage)med1), CV_BLUR, params_.radius_);
-				cvSmooth(&((IplImage)src_2c), &((IplImage)med2), CV_BLUR, params_.radius_);
+				//cvSmooth(&((IplImage)src_1c), &((IplImage)med1), CV_BLUR, params_.radius_);
+				//cvSmooth(&((IplImage)src_2c), &((IplImage)med2), CV_BLUR, params_.radius_);
+                cv::Size sz(params_.radius_, params_.radius_);
+                cv::blur(src_1c, med1, sz);
+                cv::blur(src_2c, med2, sz);
 
 				cv::Mat sym, med_gray, med_flip;
 				cv::Mat sym_w;

@@ -29,8 +29,9 @@ namespace customCV {
 			cv::Mat  dst;
 			cv::Mat src32f;
 			cv::Mat iten;
-			src.convertTo(src32f, CV_32FC3);
-			cvConvertScale(&((IplImage)src32f), &((IplImage)src32f), 1.0 / 255);
+			//src.convertTo(src32f, CV_32FC3);
+			//cvConvertScale(&((IplImage)src32f), &((IplImage)src32f), 1.0 / 255);
+            src.convertTo(src32f, CV_32FC3, 1.0/255);
 
 			iten = cv::Mat(src.rows, src.cols, CV_32F, cv::Scalar(0));
 			for (int i = 0; i < src.cols; i++) {

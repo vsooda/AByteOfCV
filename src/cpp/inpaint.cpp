@@ -201,17 +201,20 @@ namespace customCV {
 			cv::dilate(mask, band, el_cross);
 			cv::Ptr<CvPriorityQueueFloat> Heap, Out;
 
+            CvMat fmat = CvMat(f);
+            CvMat bandmat = CvMat(band);
+            
 			Heap = new CvPriorityQueueFloat;
-			if (!Heap->Init(&(CvMat(band))))
+			if (!Heap->Init(&bandmat))
 				return dst;
 
 			cv::subtract(band, mask, band);
 			setBorder(band, 0);
-			if (!Heap->Add(&(CvMat(band))))
+			if (!Heap->Add(&bandmat))
 				return dst;
-			cvSet(&(CvMat(f)), cvScalar(BAND, 0, 0, 0), &(CvMat(band)));
-			cvSet(&(CvMat(f)), cvScalar(INSIDE, 0, 0, 0), &(CvMat(mask)));
-			cvSet(&(CvMat(t)), cvScalar(0, 0, 0, 0), &(CvMat(band)));
+			cvSet(&fmat, cvScalar(BAND, 0, 0, 0), &bandmat);
+			cvSet(&fmat, cvScalar(INSIDE, 0, 0, 0), &bandmat);
+			cvSet(&fmat, cvScalar(0, 0, 0, 0), &bandmat);
 
 			cv::Mat o;
 			o.create(erows, ecols, CV_8UC1);
@@ -219,9 +222,11 @@ namespace customCV {
 			cv::dilate(mask, o, el_range);
 			cv::subtract(o, mask, o);
 			Out = new CvPriorityQueueFloat;
-			if (!Out->Init(&(CvMat(o))))
+            CvMat omat = CvMat(o);
+
+			if (!Out->Init(&omat))
 				return dst;
-			if (!Out->Add(&(CvMat(band))))
+			if (!Out->Add(&bandmat))
 				return dst;
 
 			cv::subtract(o, band, o);

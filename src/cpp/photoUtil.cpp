@@ -134,8 +134,9 @@ namespace customCV {
 	void  whiteSkin(const cv::Mat &src, cv::Mat& dst, int beta) {
 		assert(beta >= 2 && beta <= 5);
 		cv::Mat srcCopy;
-		src.convertTo(srcCopy, CV_32FC3);
-		cvConvertScale(&((IplImage)srcCopy), &((IplImage)srcCopy), 1.0 / 255.0);
+		//src.convertTo(srcCopy, CV_32FC3);
+		//cvConvertScale(&((IplImage)srcCopy), &((IplImage)srcCopy), 1.0 / 255.0);
+		src.convertTo(srcCopy, CV_32FC3, 1.0 / 255);
 		srcCopy.copyTo(dst);
 		float div = log(beta);
 		for (int i = 0; i < srcCopy.cols; i++) {
@@ -146,15 +147,17 @@ namespace customCV {
 				}
 			}
 		}
-		cvConvertScale(&((IplImage)dst), &((IplImage)dst), 255);
+		dst.convertTo(dst, CV_32FC3,  255);
+		//cvConvertScale(&((IplImage)dst), &((IplImage)dst), 255);
 		dst.convertTo(dst, CV_8UC3);
 	}
 
 	void whiteSkinC1(const cv::Mat& src, cv::Mat& dst, int beta) {
 		assert(beta >= 2 && beta <= 5);
 		cv::Mat srcCopy;
-		src.convertTo(srcCopy, CV_32F);
-		cvConvertScale(&((IplImage)srcCopy), &((IplImage)srcCopy), 1.0 / 255.0);
+		//src.convertTo(srcCopy, CV_32F);
+		//cvConvertScale(&((IplImage)srcCopy), &((IplImage)srcCopy), 1.0 / 255.0);
+		src.convertTo(srcCopy, CV_32FC3, 1.0 / 255);
 		srcCopy.copyTo(dst);
 		float div = log(beta);
 		for (int i = 0; i < srcCopy.cols; i++) {
