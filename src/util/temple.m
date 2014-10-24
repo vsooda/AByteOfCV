@@ -1,0 +1,4 @@
+function template() 
+	addpath('../');
+end
+
