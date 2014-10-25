@@ -50,8 +50,7 @@ class ThinPlateSplineShapeTransformerImpl : public ThinPlateSplineShapeTransform
 {
 public:
     /* Constructors */
-    ThinPlateSplineShapeTransformerImpl()
-    {
+    ThinPlateSplineShapeTransformerImpl() {
         regularizationParameter=0;
         name_ = "ShapeTransformer.TPS";
         tpsComputed=false;
@@ -76,6 +75,8 @@ public:
     virtual void estimationTransformation1(cv::Mat shape1, cv::Mat shape2);
     virtual float applyTransformation(InputArray inPts, OutputArray output=noArray());
     virtual void warpImage(InputArray transformingImage, OutputArray output,
+                           int flags, int borderMode, const Scalar& borderValue) const;
+    virtual void warpImage1(InputArray transformingImage, OutputArray output, vector<int>& det,
                            int flags, int borderMode, const Scalar& borderValue) const;
 
     //! Setters/Getters
@@ -169,6 +170,39 @@ void ThinPlateSplineShapeTransformerImpl::warpImage(InputArray transformingImage
     //std::cout << mapX << std::endl;
     remap(transformingImage, output, mapX, mapY, flags, borderMode, borderValue);
 }
+
+void ThinPlateSplineShapeTransformerImpl::warpImage1(InputArray transformingImage, OutputArray output,
+                                      vector<int>& det, int flags, int borderMode, const Scalar& borderValue) const
+{
+    CV_Assert(tpsComputed==true);
+
+    Mat theinput = transformingImage.getMat();
+    Mat mapX(theinput.rows, theinput.cols, CV_32FC1);
+    Mat mapY(theinput.rows, theinput.cols, CV_32FC1);
+
+   // std::cout << tpsParameters << std::endl;
+
+    for (int row = 0; row < theinput.rows; row++)
+    {
+        for (int col = 0; col < theinput.cols; col++)
+        {
+            Point2f pt = _applyTransformation(shapeReference, Point2f(float(col), float(row)), tpsParameters);
+            mapX.at<float>(row, col) = pt.x;
+            mapY.at<float>(row, col) = pt.y;
+        }
+    }
+    for(int i = 0; i < 68; i++) {
+        int tempx, tempy;
+        tempx = det[2*i];
+        tempy = det[2*i + 1];
+        det[2*i] = mapX.at<float>(tempy, tempx);
+        det[2*i+1] = mapY.at<float>(tempy,tempx);
+    }
+    //std::cout << mapX << std::endl;
+    remap(transformingImage, output, mapX, mapY, flags, borderMode, borderValue);
+}
+
+
 
 float ThinPlateSplineShapeTransformerImpl::applyTransformation(InputArray inPts, OutputArray outPts)
 {

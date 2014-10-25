@@ -273,7 +273,7 @@ namespace customCV {
 			detail1.convertTo(detailShow, CV_32F, 1.0 / bb);
 
 			setSalacyDelta();
-			cv::imshow("saldelta", salancyDelta_);
+			//cv::imshow("saldelta", salancyDelta_);
 
 			setEpsMat(params_.delta_, 0.1);
 			cv::minMaxLoc(params_.epsMat_, &minValue, &maxValue);
@@ -298,40 +298,42 @@ namespace customCV {
 			cv::Mat diffMask;
 			illumDiff.convertTo(diffMask, CV_32F, 1.0 /255.0);
 			imshow("diffMask", diffMask);
+            
+            //in the image crop method , the addtion processing of illum and color must be give up
 
-			//补充空洞纹理。
-			{
-				cv::Mat illumtemp;
-				cv::Mat illumflip;
-				illum.convertTo(illumtemp, CV_32F, 1.0 / 255);
-				illumtemp.copyTo(illumflip);
-				flip(illumtemp, illumflip, 1);
-
-				cv::Mat illumMask;
-				diffMask.copyTo(illumMask);
-
-				cv::threshold(illumMask, illumMask, 0.3, 1.0, cv::THRESH_TOZERO);
-				//避免平均人的眉毛透露出来
-				cv::Mat eyebown = cv::imread("../data/meimao.jpg", 0);
-				eyebown.convertTo(eyebown, CV_32F, 1.0 / 255);
-				eyebown = 1.0 - eyebown;
-				illumMask = illumMask.mul(eyebown);
-
-
-				illumMask = Dilation(illumMask, 13, 0);  //这个膨胀参数非常重要
-				GaussianBlur(illumMask, illumMask, cv::Size(11, 11), 0);
-				imshow("thresh", illumMask);
-
-				illumMask = illumMask * 2;
-				cv::Mat normFaceIllum;
-				p_illum.convertTo(normFaceIllum, CV_32F, 1.0/255);
-
-				//illum = illumtemp.mul(1.0 - illumMask) + illumflip.mul(illumMask); //对称填充，在严重不均时候有问题
-				illum = illumtemp.mul(1.0 - illumMask) + normFaceIllum.mul(illumMask); //平均人填充
-				illum.convertTo(illum, I_vector[2].type(), 255);
-			}
-			
-			illumDiff.convertTo(diffMask, CV_32F, 1.0 / maxValue);
+//			//补充空洞纹理。
+//			{
+//				cv::Mat illumtemp;
+//				cv::Mat illumflip;
+//				illum.convertTo(illumtemp, CV_32F, 1.0 / 255);
+//				illumtemp.copyTo(illumflip);
+//				flip(illumtemp, illumflip, 1);
+//
+//				cv::Mat illumMask;
+//				diffMask.copyTo(illumMask);
+//
+//				cv::threshold(illumMask, illumMask, 0.3, 1.0, cv::THRESH_TOZERO);
+//				//避免平均人的眉毛透露出来
+//				//cv::Mat eyebown = cv::imread("../data/meimao.jpg", 0);
+//				//eyebown.convertTo(eyebown, CV_32F, 1.0 / 255);
+//				//eyebown = 1.0 - eyebown;
+//				//illumMask = illumMask.mul(eyebown);
+//
+//
+//				illumMask = Dilation(illumMask, 13, 0);  //这个膨胀参数非常重要
+//				GaussianBlur(illumMask, illumMask, cv::Size(11, 11), 0);
+//				imshow("thresh", illumMask);
+//
+//				illumMask = illumMask * 2;
+//				cv::Mat normFaceIllum;
+//				p_illum.convertTo(normFaceIllum, CV_32F, 1.0/255);
+//
+//				//illum = illumtemp.mul(1.0 - illumMask) + illumflip.mul(illumMask); //对称填充，在严重不均时候有问题
+//				illum = illumtemp.mul(1.0 - illumMask) + normFaceIllum.mul(illumMask); //平均人填充
+//				illum.convertTo(illum, I_vector[2].type(), 255);
+//			}
+//			
+//			illumDiff.convertTo(diffMask, CV_32F, 1.0 / maxValue);
 			
 			I_vector[0] = illum;
 

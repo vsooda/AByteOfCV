@@ -120,8 +120,8 @@ def readFileNames():
 
 if __name__ == "__main__":
   #[images, indexes]=readFileNames()
-    basepath = '/home/sooda/data/face/'
-    images = glob.glob(basepath + '*.png')
+    basepath = '/home/sooda/data/face1/'
+    images = glob.glob(basepath + '*.jpg')
     cv2.namedWindow('det',  cv2.WINDOW_AUTOSIZE)
     output_path = basepath + "result/"
     print output_path

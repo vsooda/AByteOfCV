@@ -18,7 +18,8 @@ for (i = 1 : len)
 	%fprintf(fout, '%f %f %f %f', bb(2), bb(1), bb(4), bb(3));
 	bb = uint32(bb);
 
-	fprintf(fout, '%d %d %d %d\n', bb(2), bb(1), bb(4), bb(3));
+	%fprintf(fout, '%d %d %d %d\n', bb(2), bb(1), bb(4), bb(3));
+    fprintf(fout, '%d %d %d %d\n', bb(1), bb(2), bb(3), bb(4));
 end
 
 fclose(fout);

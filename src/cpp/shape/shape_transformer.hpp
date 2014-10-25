@@ -69,6 +69,11 @@ public:
 
     CV_WRAP virtual float applyTransformation(InputArray input, OutputArray output=noArray()) = 0;
 
+    CV_WRAP virtual void warpImage1(InputArray transformingImage, OutputArray output, vector<int>& det,
+                                   int flags=INTER_CUBIC, int borderMode=BORDER_WRAP,
+                                   const Scalar& borderValue=Scalar()) const = 0;
+
+
     CV_WRAP virtual void warpImage(InputArray transformingImage, OutputArray output,
                                    int flags=INTER_LINEAR, int borderMode=BORDER_CONSTANT,
                                    const Scalar& borderValue=Scalar()) const = 0;

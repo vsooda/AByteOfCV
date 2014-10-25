@@ -272,20 +272,21 @@ cv::Mat getMask(cv::Mat img, vector<int> det) {
 }
 
 
-void showDetectResult() {
+void tpsWarpIllum() {
     int num = 50;
+    int filenum = 600;
     //vector<int> det(68 * 2);
     vector<vector<int> > dets;
     vector<cv::Mat> images;
-    FILE* fin = fopen("/home/sooda/data/face/result/1.txt", "r");
+    FILE* fin = fopen("/home/sooda/data/face1/result/1.txt", "r");
     char filename[80];
-    for(int i = 0; i < 50; i++) {
+    for(int i = 0; i < filenum; i++) {
         int cnt = fscanf(fin, "%s%*c", filename);
         if(cnt <= 0) {
             break; 
         }
 
-        std::cout << filename << std::endl;
+        std::cout << i << " "  << filename << std::endl;
         int tempx, tempy;
         vector<int> det(68*2);
         for(int j = 0; j < 68; j++) {
@@ -322,21 +323,21 @@ void showDetectResult() {
         //
     
 
-        cv::Mat mask = getMask(img, det);
-
-//        imshow("mask", mask);
-//        cv::Mat sal;
-//		img.convertTo(img, CV_32FC3, 1.0 / 255.0);
-//		cv::Ptr<customCV::Salancy> salancyMethod = customCV::Salancy::create(0);
-//		sal= salancyMethod->apply(img, mask, mask);
-//		sal.convertTo(sal, CV_8UC1, 255);
-//        imshow("sal", sal);
+//       cv::Mat mask = getMask(img, det);
+//       imshow("mask", mask);
+//       cv::Mat sal;
+//	   img.convertTo(img, CV_32FC3, 1.0 / 255.0);
+//	   cv::Ptr<customCV::Salancy> salancyMethod = customCV::Salancy::create(0);
+//	   sal= salancyMethod->apply(img, mask, mask);
+//	   sal.convertTo(sal, CV_8UC1, 255);
+//       imshow("sal", sal);
+//       imwrite("stdsal.jpg", sal);
 //
 
         //cv::Rect rect = boundingRect(det);
-        for(int i = 0; i < 68; i++) {
-            cv::circle(img, cv::Point(det[i*2], det[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
-        }
+        //for(int i = 0; i < 68; i++) {
+        //    cv::circle(img, cv::Point(det[i*2], det[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
+        //}
 //        imshow("img", img);
  //       waitKey();
         //cv::imshow("result", img);
@@ -351,11 +352,11 @@ void showDetectResult() {
  //       std::cout << std::endl;
  //   }
     //10 transform to 16
-    for(int i = 0; i < 39; i++) {
+    for(int i = 0; i < filenum; i++) {
         
         int matchSize = 68;
         cv::Mat transformingImage, result;
-        int transIndex = 40;
+        int transIndex = 454;
         //int transIndex = 10;
         int targetIndex = i;
         images[transIndex].copyTo(transformingImage);
@@ -364,10 +365,10 @@ void showDetectResult() {
         cv::Mat shape2(matchSize, 2, CV_32F);
         vector<int> det1 = dets[transIndex];
         vector<int> det2 = dets[targetIndex];
-        for(int i = 0; i < 68; i++) {
-            cv::circle(transformingImage, cv::Point(det1[i*2], det1[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
-            cv::circle(result, cv::Point(det2[i*2], det2[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
-        }
+      //  for(int i = 0; i < 68; i++) {
+      //      cv::circle(transformingImage, cv::Point(det1[i*2], det1[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
+      //      cv::circle(result, cv::Point(det2[i*2], det2[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
+      //  }
         imshow("src", transformingImage);
         imshow("target", result);
         for(int i = 0; i < matchSize; i++) {
@@ -392,15 +393,78 @@ void showDetectResult() {
         //tps->estimationTransformation1(shape1, shape2);
         tps->estimationTransformation1(shape2, shape1);
         tps->warpImage(transformingImage, result); 
-        imshow("result", result);
+      //  for(int i = 0; i < 68; i++) {
+      //      cv::circle(result, cv::Point(det2[i*2], det2[i*2+1]), 3, cv::Scalar(255, 255, 0)); 
+      //  }
+        imshow("warpResult", result);
+        //¿¿¿¿
+        cv::Mat mask2 = getMask(result, det2);
+        imshow("mask2", mask2);
+        cv::Mat extra = imread("sal.jpg", 0);
+        imshow("img", images[targetIndex]);
+        //customCV::IllumTransform::Params params(30, 0.2, extra, mask2);
+        //cv::Ptr<customCV::IllumTransform> illumMethod = customCV::IllumTransform::create(1, params);
+        cv::Ptr<customCV::IllumTransform> illumMethod = customCV::IllumTransform::create();
+        cv::Mat dst = illumMethod->apply(images[targetIndex], result);
+        //imshow("dst", dst);
+        for(int i = 0; i < mask2.cols; i++) {
+            for(int j = 0; j < mask2.rows; j++) {
+                if(mask2.at<uchar>(j, i) == 0){
+                    dst.at<cv::Vec3b>(j, i)[0] = 0;
+                    dst.at<cv::Vec3b>(j, i)[1] = 0;
+                    dst.at<cv::Vec3b>(j, i)[2] = 0;
+                }
+            }
+        }
+        imshow("dst", dst);
+        
+       // cv::Mat mask = getMask(result, det1);
+       // imshow("mask", mask);
+       // cv::Mat sal;
+	   // result.convertTo(result, CV_32FC3, 1.0 / 255.0);
+	   // cv::Ptr<customCV::Salancy> salancyMethod = customCV::Salancy::create(0);
+	   // sal= salancyMethod->apply(result, mask, mask);
+	   // sal.convertTo(sal, CV_8UC1, 255);
+       // imshow("sal", sal);
+       // imwrite("stdsal.jpg", sal);
+        cv::waitKey();
+       // break;
+    }
+
+}
+
+void showHelenDatabase() {
+    int filenum = 50;
+    int landmarknum = 194;
+    string basename = "/home/sooda/data/helen/";
+    FILE* fin = fopen("/home/sooda/data/helen/annotation1.txt", "r");
+    char filename[80];
+    for(int i = 0; i < filenum; i++) {
+        int cnt = fscanf(fin, "%s%*c", filename);
+        int tempx, tempy, tempw, temph;
+        fscanf(fin, "%d %d %d %d%*c", &tempx, &tempy, &tempw, &temph);
+        vector<cv::Point> landmark;
+        for(int j = 0; j < landmarknum; j++) { 
+            int x, y;
+            fscanf(fin, "%d %d%*c", &x, &y);
+            std::cout << x << " " << y << std::endl;
+        }
+        string fullname = basename + filename;
+        std::cout << fullname << std::endl;
+        cv::Mat img = cv::imread(fullname.c_str());
+        cv::rectangle(img, cv::Point(tempx, tempy), cv::Point(tempw, temph), cv::Scalar(255, 255, 0));
+        //cv::rectangle(img, cv::Point(tempy, tempx), cv::Point(temph, tempw), cv::Scalar(255, 0, 0));
+        cv::imshow("img", img);
         cv::waitKey();
     }
+        
 
 }
 
 
 int main() {
-    showDetectResult();
+    showHelenDatabase();
+    //tpsWarpIllum();
 	//guideIllumTestBatch();
 	//return 0;
 //	illumTransform_test();
