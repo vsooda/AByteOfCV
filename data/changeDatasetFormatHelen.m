@@ -4,17 +4,18 @@ addpath functions
 
 
 %% select database and load bb initializations
-load bounding_boxes_helen_trainset
+load bounding_boxes_helen_testset
 
 %% Select image
-fout = fopen('helen_bb.txt', 'w');
+fout = fopen('helen_test_bb_d.txt', 'w');
 
 bbs = cell2mat(bounding_boxes);
 len = length(bounding_boxes)
 
 for (i = 1 : len) 
 	fprintf(fout, '%s\n', bbs(i).imgName);	
-	bb = bbs(i).bb_ground_truth;
+	%bb = bbs(i).bb_ground_truth;
+    bb = bbs(i).bb_detector;
 	%fprintf(fout, '%f %f %f %f', bb(2), bb(1), bb(4), bb(3));
 	bb = uint32(bb);
 

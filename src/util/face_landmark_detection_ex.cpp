@@ -87,30 +87,38 @@ int main(int argc, char** argv)
         // Loop over all the images provided on the command line.
         for (int i = 2; i < argc; ++i)
         {
-            //cout << "processing image " << argv[i] << endl;
+            cout << "processing image " << argv[i] << endl;
             array2d<rgb_pixel> img;
             load_image(img, argv[i]);
             
             cv::Mat srcGray = cv::imread(argv[i], 0);
             equalizeHist(srcGray, srcGray);
             cv::CascadeClassifier cascade, nestedCascade;
+            //char cascadeFilename[] = "haarcascade_profileface.xml";
             char cascadeFilename[] = "haarcascade_frontalface_alt2.xml";
+            //char cascadeFilename[] = "haarcascade_frontalface_default.xml";
             cascade.load(cascadeFilename);
             std::vector<cv::Rect> faces;
-            cascade.detectMultiScale(srcGray, faces, 1.1, 2,CV_HAAR_FIND_BIGGEST_OBJECT,
-cv::Size(15, 15) );
-            int left_x = faces[0].x;
-            int left_y = faces[0].y;
-            int right_x = left_x + faces[0].width;
-            int right_y = left_y + faces[0].height;
+            //cascade.detectMultiScale(srcGray, faces, 1.1, 2,CV_HAAR_FIND_BIGGEST_OBJECT, cv::Size(15, 15) );
+            cascade.detectMultiScale(srcGray, faces, 1.1, 2, 0 | cv::CASCADE_SCALE_IMAGE, cv::Size(100, 100) );
+            //int left_x = faces[0].x + 0.05 * faces[0].width;
+            //int left_y = faces[0].y + 0.15 * faces[0].height;
+            //int right_x = faces[0].x + faces[0].width * 0.9;
+            //int right_y = faces[0].y + faces[0].height * 1.1 ;
+            int left_x = faces[0].x ;
+            int left_y = faces[0].y ;
+            int right_x = faces[0].x + faces[0].width;
+            int right_y = faces[0].y + faces[0].height;
 
-            cv::rectangle(srcGray, cv::Point(left_x, left_y), cv::Point(right_x, right_y), cv::Scalar(255, 0, 0));
-        //    cv::imshow("detection", srcGray);
+            //cv::rectangle(srcGray, cv::Point(left_x, left_y), cv::Point(right_x, right_y), cv::Scalar(255, 0, 0));
+            //cv::imshow("detection", srcGray);
+            //cv::waitKey();
 
-         //   rectangle detection(left_x, left_y, right_x, right_y);
-         //   std::vector<rectangle> dets;
-          //  dets.push_back(detection);
-            std::vector<rectangle> dets = detector(img);
+         
+            rectangle detection(left_x, left_y, right_x, right_y);
+            std::vector<rectangle> dets;
+            dets.push_back(detection);
+            std::vector<rectangle> dets1 = detector(img);
 
             // Make the image larger so we can detect small faces.
  //           pyramid_up(img);
@@ -124,6 +132,7 @@ cv::Size(15, 15) );
             // Now we will go ask the shape_predictor to tell us the pose of
             // each face we detected.
             std::vector<full_object_detection> shapes;
+            std::vector<full_object_detection> shapes1;
             for (unsigned long j = 0; j < dets.size(); ++j)
             {
                 full_object_detection shape = sp(img, dets[j]);
@@ -135,19 +144,33 @@ cv::Size(15, 15) );
                 // put them on the screen.
                 shapes.push_back(shape);
             }
-
-            std::cout << argv[i] << std::endl;  
+            for (unsigned long j = 0; j < dets1.size(); ++j)
+            {
+                full_object_detection shape = sp(img, dets1[j]);
+                shapes1.push_back(shape);
+            }
 
             full_object_detection res = shapes[0];
+            full_object_detection res1 = shapes1[0];
+            //for(int i = 0; i < 68; i++) {
+            //    std::cout << res.part(i) << std::endl;
+            cv::Mat dst = cv::imread(argv[i]);
+            //FILE *fout = fopen("0.lm", "w");
             for(int i = 0; i < 68; i++) {
-                std::cout << res.part(i) << std::endl;
+                point pt = res.part(i);
+                int tempx = pt.x();
+                int tempy = pt.y();
+                //fprintf(fout, "%.2f,%.2f\n", (float)tempx, (float)tempy);
+                cv::circle(dst, cv::Point(tempx, tempy), 1, cv::Scalar(255, 255, 0));
+                point pt1 = res1.part(i);
+                int tempx1 = pt1.x();
+                int tempy1 = pt1.y();
+                cv::circle(dst, cv::Point(tempx1, tempy1), 1, cv::Scalar(255, 255, 255));
             }
-            // Now lets view our face poses on the screen.
-            win.clear_overlay();
-            win.set_image(img);
-            win.add_overlay(render_face_detections(shapes));
+            cv::rectangle(dst, cv::Point(left_x, left_y), cv::Point(right_x, right_y), cv::Scalar(255, 0, 255));
+            cv::rectangle(dst, cv::Point(dets1[0].left(), dets1[0].top()), cv::Point(dets1[0].right(), dets1[0].bottom()), cv::Scalar(255, 0, 0));
+            cv::imshow("dst", dst);
             cv::waitKey();
-
             //cout << "Hit enter to process the next image..." << endl;
         }
     }
