@@ -112,19 +112,31 @@ namespace dlib
 				assert(node.type() == cv::FileNode::MAP);
 				splits = std::vector<split_feature>(15);
 				cv::FileNode split_nodes = node["split"];
-				leaf_values = std::vector<matrix<float, 0, 1> >(16);
+				//leaf_values = std::vector<matrix<float, 136, 1> >(16);
+				for (int i = 0; i < 16; i++) {
+					matrix<float, 0, 1> temp;
+					temp.set_size(136, 1);
+					leaf_values.push_back(temp);
+				}
 				cv::FileNodeIterator it = split_nodes.begin(), it_end = split_nodes.end();
 				int idx = 0;
 				for (; it != it_end; ++it, idx++) {
 					(*it) >> splits[idx];
 				}
 
+				//std::cout << "reading leaf" << std::endl;
 				cv::Mat leafMat;
-				node["leaf_values"] >> leafMat;
-				for (int i = 0; i < leafMat.cols; i++) {
+				node["leaft_values"] >> leafMat;
+				//std::cout << leafMat.size() << std::endl;
+				for (int i = 0; i < leafMat.cols; i++) { //16列
+					//matrix<float, 0, 1> temp;
+					//temp.set_size(136, 1);
 					for (int j = 0; j < leafMat.rows; j++) {
 						leaf_values[i](j) = leafMat.at<float>(j, i);
+						//temp(j, 1) = leafMat.at<float>(j, i);
 					}
+					//leaf_values.push_back(temp);
+					//leaf_values[i] = temp;
 				}
 					
 			}
@@ -168,13 +180,6 @@ namespace dlib
             const matrix<float,0,1>& shape,
             int idx
         )
-        /*!
-            requires
-                - idx < shape.size()/2
-                - shape.size()%2 == 0
-            ensures
-                - returns the idx-th point from the shape vector.
-        !*/
         {
             return vector<float,2>(shape(idx*2), shape(idx*2+1));
         }
@@ -229,6 +234,7 @@ namespace dlib
             const matrix<float,0,1>& to_shape
         )
         {
+			//std::cout << "shape size " << from_shape.size() << " " << to_shape.size() << std::endl;
             DLIB_ASSERT(from_shape.size() == to_shape.size() && (from_shape.size()%2) == 0 && from_shape.size() > 0,"");
             std::vector<vector<float,2> > from_points, to_points;
             const int num = from_shape.size()/2;
@@ -344,13 +350,18 @@ namespace dlib
         ) const
         {
             using namespace impl;
-            matrix<float,0,1> current_shape = initial_shape;
+			matrix<float, 0, 1> current_shape;
+			current_shape.set_size(136, 1);
+			current_shape = initial_shape;
             std::vector<float> feature_pixel_values;
             for (int iter = 0; iter < forests.size(); ++iter)
             {
+				//std::cout << "current_shape " << current_shape.size() << "  initial_shape " << initial_shape.size() << std::endl;
                 extract_feature_pixel_values(img, rect, current_shape, initial_shape, anchor_idx[iter], deltas[iter], feature_pixel_values);
+				//std::cout << "current_shape " << current_shape.size() << "  initial_shape " << initial_shape.size() << std::endl;
                 // evaluate all the trees at this level of the cascade.
 				for (int i = 0; i < forests[iter].size(); ++i) {
+					//std::cout << "forest: " << forests[iter][i](feature_pixel_values).size() << std::endl;
 					current_shape += forests[iter][i](feature_pixel_values);
 				}
             }
@@ -390,17 +401,19 @@ namespace dlib
 			cv::Mat shape0;
 			node["init_shape"] >> shape0;
 			initial_shape.set_size(136, 1);
+			//dlib::matrix<float, 136, 1> temp;
+			//initial_shape = temp;
 			for (int i = 0; i < 136; i++) {
-				//initial_shape(i) = shape0.at<float>(i, 1);
-				std::cout << i << " " << shape0.at<float>(1, i) << " ";
+				initial_shape(i) = shape0.at<float>(i, 0);
 			}
+			std::cout << "initial_shape:: " << initial_shape.size() << std::endl;
 			forests = std::vector<std::vector<impl::regression_tree> >(15);
 			for (int i = 0; i < 15; i++) {
 				forests[i] = std::vector<impl::regression_tree>(500);
 			}
 			anchor_idx = std::vector<std::vector<int> >(15);
 			for (int i = 0; i < 15; i++) {
-				anchor_idx[i] = std::vector<int>(15);
+				anchor_idx[i] = std::vector<int>(500);
 			}
 			deltas = std::vector<std::vector<dlib::vector<float, 2> > >(15);
 			for (int i = 0; i < 15; i++) {
@@ -425,6 +438,7 @@ namespace dlib
 				cv::FileNodeIterator it = anchor_node.begin(), it_end = anchor_node.end();
 				int idx = 0;
 				for (; it != it_end; ++it, idx++) {
+					//std::cout << anchor_name << " " << idx << std::endl;
 						(*it) >> anchor_idx[i][idx];
 				}
 			}
@@ -453,7 +467,7 @@ namespace dlib
 			cv::Mat shape0(136, 1, CV_32FC1);
 			fs << "{";
 			for (int i = 0; i < 136; i++) {
-				shape0.at<float>(i, 1) = initial_shape(i);
+				shape0.at<float>(i, 0) = initial_shape(i);
 			}
 			fs << "init_shape" << shape0;
 			char forest_name[50];
@@ -506,655 +520,6 @@ namespace dlib
 		else
 			x.read(node);
 	}
-
-// ----------------------------------------------------------------------------------------
-
-    class shape_predictor_trainer
-    {
-        /*!
-            This thing really only works with unsigned char or rgb_pixel images (since we assume the threshold 
-            should be in the range [-128,128]).
-        !*/
-    public:
-
-        shape_predictor_trainer (
-        )
-        {
-            _cascade_depth = 10;
-            _tree_depth = 4;
-            _num_trees_per_cascade_level = 500;
-            _nu = 0.1;
-            _oversampling_amount = 20;
-            _feature_pool_size = 400;
-            _lambda = 0.1;
-            _num_test_splits = 20;
-            _feature_pool_region_padding = 0;
-            _verbose = false;
-        }
-
-        int get_cascade_depth (
-        ) const { return _cascade_depth; }
-
-        void set_cascade_depth (
-            int depth
-        )
-        {
-            DLIB_CASSERT(depth > 0, 
-                "\t void shape_predictor_trainer::set_cascade_depth()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t depth:  " << depth
-            );
-
-            _cascade_depth = depth;
-        }
-
-        int get_tree_depth (
-        ) const { return _tree_depth; }
-
-        void set_tree_depth (
-            int depth
-        )
-        {
-            DLIB_CASSERT(depth > 0, 
-                "\t void shape_predictor_trainer::set_tree_depth()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t depth:  " << depth
-            );
-
-            _tree_depth = depth;
-        }
-
-        int get_num_trees_per_cascade_level (
-        ) const { return _num_trees_per_cascade_level; }
-
-        void set_num_trees_per_cascade_level (
-            int num
-        )
-        {
-            DLIB_CASSERT( num > 0,
-                "\t void shape_predictor_trainer::set_num_trees_per_cascade_level()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t num:  " << num
-            );
-            _num_trees_per_cascade_level = num;
-        }
-
-        double get_nu (
-        ) const { return _nu; } 
-        void set_nu (
-            double nu
-        )
-        {
-            DLIB_CASSERT(nu > 0,
-                "\t void shape_predictor_trainer::set_nu()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t nu:  " << nu 
-            );
-
-            _nu = nu;
-        }
-
-        std::string get_random_seed (
-        ) const { return rnd.get_seed(); }
-        void set_random_seed (
-            const std::string& seed
-        ) { rnd.set_seed(seed); }
-
-        int get_oversampling_amount (
-        ) const { return _oversampling_amount; }
-        void set_oversampling_amount (
-            int amount
-        )
-        {
-            DLIB_CASSERT(amount > 0, 
-                "\t void shape_predictor_trainer::set_oversampling_amount()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t amount: " << amount 
-            );
-
-            _oversampling_amount = amount;
-        }
-
-        int get_feature_pool_size (
-        ) const { return _feature_pool_size; }
-        void set_feature_pool_size (
-            int size
-        ) 
-        {
-            DLIB_CASSERT(size > 1, 
-                "\t void shape_predictor_trainer::set_feature_pool_size()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t size: " << size 
-            );
-
-            _feature_pool_size = size;
-        }
-
-        double get_lambda (
-        ) const { return _lambda; }
-        void set_lambda (
-            double lambda
-        )
-        {
-            DLIB_CASSERT(lambda > 0,
-                "\t void shape_predictor_trainer::set_lambda()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t lambda: " << lambda 
-            );
-
-            _lambda = lambda;
-        }
-
-        int get_num_test_splits (
-        ) const { return _num_test_splits; }
-        void set_num_test_splits (
-            int num
-        )
-        {
-            DLIB_CASSERT(num > 0, 
-                "\t void shape_predictor_trainer::set_num_test_splits()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t num: " << num 
-            );
-
-            _num_test_splits = num;
-        }
-
-
-        double get_feature_pool_region_padding (
-        ) const { return _feature_pool_region_padding; }
-        void set_feature_pool_region_padding (
-            double padding 
-        )
-        {
-            _feature_pool_region_padding = padding;
-        }
-
-        void be_verbose (
-        )
-        {
-            _verbose = true;
-        }
-
-        void be_quiet (
-        )
-        {
-            _verbose = false;
-        }
-		
-		//先对数据预处理
-        template <typename image_array>
-        shape_predictor train (
-            const image_array& images,
-            const std::vector<std::vector<full_object_detection> >& objects
-        ) const
-        {
-            using namespace impl;
-            DLIB_CASSERT(images.size() == objects.size() && images.size() > 0,
-                "\t shape_predictor shape_predictor_trainer::train()"
-                << "\n\t Invalid inputs were given to this function. "
-                << "\n\t images.size():  " << images.size() 
-                << "\n\t objects.size(): " << objects.size() 
-            );
-            // make sure the objects agree on the number of parts and that there is at
-            // least one full_object_detection. 
-            int num_parts = 0;
-            for (int i = 0; i < objects.size(); ++i)
-            {
-                for (int j = 0; j < objects[i].size(); ++j) //每个人脸
-                {
-                    if (num_parts == 0)
-                    {
-                        num_parts = objects[i][j].num_parts();
-                    }
-                    else
-                    {
-                        DLIB_CASSERT(objects[i][j].num_parts() == num_parts,
-                            "\t shape_predictor shape_predictor_trainer::train()"
-                            << "\n\t All the objects must agree on the number of parts. "
-                            << "\n\t objects["<<i<<"]["<<j<<"].num_parts(): " << objects[i][j].num_parts()
-                            << "\n\t num_parts:  " << num_parts 
-                        );
-                    }
-                }
-            }
-            DLIB_CASSERT(num_parts != 0,
-                "\t shape_predictor shape_predictor_trainer::train()"
-                << "\n\t You must give at least one full_object_detection if you want to train a shape model and it must have parts."
-            );
-
-            rnd.set_seed(get_random_seed());
-
-            std::vector<training_sample> samples;
-            const matrix<float,0,1> initial_shape = populate_training_sample_shapes(objects, samples);
-            const std::vector<std::vector<dlib::vector<float,2> > > pixel_coordinates = randomly_sample_pixel_coordinates(initial_shape);
-
-            int trees_fit_so_far = 0;
-			console_progress_indicator pbar(get_cascade_depth()*get_num_trees_per_cascade_level());
-            if (_verbose)
-                std::cout << "Fitting trees..." << std::endl;
-
-            std::vector<std::vector<impl::regression_tree> > forests(get_cascade_depth());
-            // Now start doing the actual training by filling in the forests
-            for (int cascade = 0; cascade < get_cascade_depth(); ++cascade)
-            {
-                // Each cascade uses a different set of pixels for its features.  We compute
-                // their representations relative to the initial shape first.
-                std::vector<int> anchor_idx; 
-                std::vector<dlib::vector<float,2> > deltas;
-				//由采样点获取对应的下标，delta(该采样点偏离特征点距离)
-                create_shape_relative_encoding(initial_shape, pixel_coordinates[cascade], anchor_idx, deltas);
-
-                // First compute the feature_pixel_values for each training sample at this
-                // level of the cascade.
-				//每个cascade都要重新获得sample[i].feature_pixel_values
-                for (int i = 0; i < samples.size(); ++i)
-                {
-                    extract_feature_pixel_values(images[samples[i].image_idx], samples[i].rect,
-                        samples[i].current_shape, initial_shape, anchor_idx,
-                        deltas, samples[i].feature_pixel_values);
-                }
-
-                // Now start building the trees at this cascade level.
-                for (int i = 0; i < get_num_trees_per_cascade_level(); ++i)
-                {
-                    forests[cascade].push_back(make_regression_tree(samples, pixel_coordinates[cascade]));
-
-                    if (_verbose)
-                    {
-                        ++trees_fit_so_far;
-                        pbar.print_status(trees_fit_so_far);
-                    }
-                }
-            }
-
-            if (_verbose)
-                std::cout << "Training complete                          " << std::endl;
-			//为什么下面这个函数重新对anchor_idx,deltas进行构造。 应该没有变化的
-            return shape_predictor(initial_shape, forests, pixel_coordinates);
-        }
-
-    private:
-
-        static matrix<float,0,1> object_to_shape (
-            const full_object_detection& obj
-        )
-        {
-            matrix<float,0,1> shape(obj.num_parts()*2);
-            const point_transform_affine tform_from_img = impl::normalizing_tform(obj.get_rect());
-            for (int i = 0; i < obj.num_parts(); ++i)
-            {
-                vector<float,2> p = tform_from_img(obj.part(i));
-                shape(2*i)   = p.x();
-                shape(2*i+1) = p.y();
-            }
-            return shape;
-        }
-
-        struct training_sample 
-        {
-            /*!
-            CONVENTION
-                - feature_pixel_values.size() == get_feature_pool_size()
-                - feature_pixel_values[j] == the value of the j-th feature pool
-                  pixel when you look it up relative to the shape in current_shape.
-
-                - target_shape == The truth shape.  Stays constant during the whole
-                  training process.
-                - rect == the position of the object in the image_idx-th image.  All shape
-                  coordinates are coded relative to this rectangle.
-            !*/
-
-            int image_idx;
-            rectangle rect;
-            matrix<float,0,1> target_shape; 
-
-            matrix<float,0,1> current_shape;  
-            std::vector<float> feature_pixel_values;
-
-            void swap(training_sample& item)
-            {
-                std::swap(image_idx, item.image_idx);
-                std::swap(rect, item.rect);
-                target_shape.swap(item.target_shape);
-                current_shape.swap(item.current_shape);
-                feature_pixel_values.swap(item.feature_pixel_values);
-            }
-        };
-
-        impl::regression_tree make_regression_tree (
-            std::vector<training_sample>& samples,
-            const std::vector<dlib::vector<float,2> >& pixel_coordinates
-        ) const
-        {
-            using namespace impl;
-            std::deque<std::pair<int, int> > parts;
-            parts.push_back(std::make_pair(0, samples.size()));
-
-            impl::regression_tree tree;
-
-            // walk the tree in breadth first order
-            const int num_split_nodes = static_cast<int>(std::pow(2.0, (double)get_tree_depth())-1);
-            std::vector<matrix<float,0,1> > sums(num_split_nodes*2+1);//sum[i]保存当前结点下，所有样本形状与当前形状的差别
-            for (int i = 0; i < samples.size(); ++i)
-                sums[0] += samples[i].target_shape - samples[i].current_shape;
-
-            for (int i = 0; i < num_split_nodes; ++i) 
-            {
-                std::pair<int,int> range = parts.front();
-                parts.pop_front();
-
-				//再划分的时候即算出两边的误差总值，后面再除以在这个区间内的样本数，就是平均误差
-                const impl::split_feature split = generate_split(samples, range.first,
-                    range.second, pixel_coordinates, sums[i], sums[left_child(i)],
-                    sums[right_child(i)]);
-                tree.splits.push_back(split);
-				//划分样本
-                const int mid = partition_samples(split, samples, range.first, range.second); 
-
-                parts.push_back(std::make_pair(range.first, mid));
-                parts.push_back(std::make_pair(mid, range.second));
-            }
-
-            // Now all the parts contain the ranges for the leaves so we can use them to
-            // compute the average leaf values.
-            tree.leaf_values.resize(parts.size());
-            for (int i = 0; i < parts.size(); ++i)
-            {
-                if (parts[i].second != parts[i].first)
-                    tree.leaf_values[i] = sums[num_split_nodes+i]*get_nu()/(parts[i].second - parts[i].first);
-                else
-                    tree.leaf_values[i] = zeros_matrix(samples[0].target_shape);
-
-                // now adjust the current shape based on these predictions
-                for (int j = parts[i].first; j < parts[i].second; ++j)
-                    samples[j].current_shape += tree.leaf_values[i];
-            }
-
-            return tree;
-        }
-
-        impl::split_feature randomly_generate_split_feature (
-            const std::vector<dlib::vector<float,2> >& pixel_coordinates
-        ) const
-        {
-            const double lambda = get_lambda(); 
-            impl::split_feature feat;
-            double accept_prob;
-            do 
-            {
-                feat.idx1   = rnd.get_random_32bit_number()%get_feature_pool_size();
-                feat.idx2   = rnd.get_random_32bit_number()%get_feature_pool_size();
-                const double dist = length(pixel_coordinates[feat.idx1]-pixel_coordinates[feat.idx2]);
-                accept_prob = std::exp(-dist/lambda);
-            }
-            while(feat.idx1 == feat.idx2 || !(accept_prob > rnd.get_random_double()));
-
-            feat.thresh = (rnd.get_random_double()*256 - 128)/2.0;
-
-            return feat;
-        }
-
-		//随机一些特征，分别按这些特征进行划分，找最佳划分
-        impl::split_feature generate_split (
-            const std::vector<training_sample>& samples,
-            int begin,
-            int end,
-            const std::vector<dlib::vector<float,2> >& pixel_coordinates,
-            const matrix<float,0,1>& sum,
-            matrix<float,0,1>& left_sum,
-            matrix<float,0,1>& right_sum 
-        ) const
-        {
-            // generate a bunch of random splits and test them and return the best one.
-
-            const int num_test_splits = get_num_test_splits();  
-
-            // sample the random features we test in this function
-            std::vector<impl::split_feature> feats;
-            feats.reserve(num_test_splits);
-            for (int i = 0; i < num_test_splits; ++i)
-                feats.push_back(randomly_generate_split_feature(pixel_coordinates));
-
-            std::vector<matrix<float,0,1> > left_sums(num_test_splits);
-            std::vector<int> left_cnt(num_test_splits);
-
-            // now compute the sums of vectors that go left for each feature
-            matrix<float,0,1> temp;
-            for (int j = begin; j < end; ++j)
-            {
-                temp = samples[j].target_shape-samples[j].current_shape;
-                for (int i = 0; i < num_test_splits; ++i)
-                {
-                    if (samples[j].feature_pixel_values[feats[i].idx1] - samples[j].feature_pixel_values[feats[i].idx2] > feats[i].thresh)
-                    {
-                        left_sums[i] += temp;
-                        ++left_cnt[i];
-                    }
-                }
-            }
-
-            // now figure out which feature is the best
-            double best_score = -1;
-            int best_feat = 0;
-            for (int i = 0; i < num_test_splits; ++i)
-            {
-                // check how well the feature splits the space.
-                double score = 0;
-                int right_cnt = end-begin-left_cnt[i];
-                if (left_cnt[i] != 0 && right_cnt != 0)
-                {
-                    temp = sum - left_sums[i];
-                    score = dot(left_sums[i],left_sums[i])/left_cnt[i] + dot(temp,temp)/right_cnt;
-                    if (score > best_score)
-                    {
-                        best_score = score;
-                        best_feat = i;
-                    }
-                }
-            }
-
-            left_sums[best_feat].swap(left_sum);
-            if (left_sum.size() != 0)
-            {
-                right_sum = sum - left_sum;
-            }
-            else
-            {
-                right_sum = sum;
-                left_sum = zeros_matrix(sum);
-            }
-            return feats[best_feat];
-        }
-
-		//将 样本进行排序，小于阈值的放在前面，大于阈值的放在后面
-        int partition_samples (
-            const impl::split_feature& split,
-            std::vector<training_sample>& samples,
-            int begin,
-            int end
-        ) const
-        {
-            // splits samples based on split (sorta like in quick sort) and returns the mid
-            // point.  make sure you return the mid in a way compatible with how we walk
-            // through the tree.
-
-            int i = begin;
-            for (int j = begin; j < end; ++j)
-            {
-                if (samples[j].feature_pixel_values[split.idx1] - samples[j].feature_pixel_values[split.idx2] > split.thresh)
-                {
-                    samples[i].swap(samples[j]);
-                    ++i;
-                }
-            }
-            return i;
-        }
-
-
-
-        matrix<float,0,1> populate_training_sample_shapes(
-            const std::vector<std::vector<full_object_detection> >& objects,
-            std::vector<training_sample>& samples
-        ) const
-        {
-            samples.clear();
-            matrix<float,0,1> mean_shape;
-            long count = 0;
-            // first fill out the target shapes
-            for (int i = 0; i < objects.size(); ++i)
-            {
-                for (int j = 0; j < objects[i].size(); ++j)
-                {
-                    training_sample sample;
-                    sample.image_idx = i;
-                    sample.rect = objects[i][j].get_rect();
-                    sample.target_shape = object_to_shape(objects[i][j]);
-                    for (int itr = 0; itr < get_oversampling_amount(); ++itr)
-                        samples.push_back(sample);
-                    mean_shape += sample.target_shape;
-                    ++count;
-                }
-            }
-
-            mean_shape /= count;
-
-            // now go pick random initial shapes
-            for (int i = 0; i < samples.size(); ++i)
-            {
-                if ((i%get_oversampling_amount()) == 0)
-                {
-                    // The mean shape is what we really use as an initial shape so always
-                    // include it in the training set as an example starting shape.
-                    samples[i].current_shape = mean_shape;
-                }
-                else
-                {
-                    // Pick a random convex combination of two of the target shapes and use
-                    // that as the initial shape for this sample.
-                    const int rand_idx = rnd.get_random_32bit_number()%samples.size();
-                    const int rand_idx2 = rnd.get_random_32bit_number()%samples.size();
-                    const double alpha = rnd.get_random_double();
-                    samples[i].current_shape = alpha*samples[rand_idx].target_shape + (1-alpha)*samples[rand_idx2].target_shape;
-                }
-            }
-
-
-            return mean_shape;
-        }
-
-
-        void randomly_sample_pixel_coordinates (
-            std::vector<dlib::vector<float,2> >& pixel_coordinates,
-            const double min_x,
-            const double min_y,
-            const double max_x,
-            const double max_y
-        ) const
-        /*!
-            ensures
-                - #pixel_coordinates.size() == get_feature_pool_size() 
-                - for all valid i:
-                    - pixel_coordinates[i] == a point in the box defined by the min/max x/y arguments.
-        !*/
-        {
-            pixel_coordinates.resize(get_feature_pool_size());
-            for (int i = 0; i < get_feature_pool_size(); ++i)
-            {
-                pixel_coordinates[i].x() = rnd.get_random_double()*(max_x-min_x) + min_x;
-                pixel_coordinates[i].y() = rnd.get_random_double()*(max_y-min_y) + min_y;
-            }
-        }
-
-		//对每个cascade需要的点进行采样
-        std::vector<std::vector<dlib::vector<float,2> > > randomly_sample_pixel_coordinates (
-            const matrix<float,0,1>& initial_shape
-        ) const
-        {
-            const double padding = get_feature_pool_region_padding();
-            // Figure figure out the bounds on the object shapes.  We will sample uniformly
-            // from this box.
-            matrix<float> temp = reshape(initial_shape, initial_shape.size()/2, 2);
-            const double min_x = min(colm(temp,0))-padding;
-            const double min_y = min(colm(temp,1))-padding;
-            const double max_x = max(colm(temp,0))+padding;
-            const double max_y = max(colm(temp,1))+padding;
-
-            std::vector<std::vector<dlib::vector<float,2> > > pixel_coordinates;
-            pixel_coordinates.resize(get_cascade_depth());
-            for (int i = 0; i < get_cascade_depth(); ++i)
-                randomly_sample_pixel_coordinates(pixel_coordinates[i], min_x, min_y, max_x, max_y);
-            return pixel_coordinates;
-        }
-
-        mutable dlib::rand rnd;
-
-        int _cascade_depth;
-        int _tree_depth;
-        int _num_trees_per_cascade_level;
-        double _nu;
-        int _oversampling_amount;
-        int _feature_pool_size;
-        double _lambda;
-        int _num_test_splits;
-        double _feature_pool_region_padding;
-        bool _verbose;
-    };
-
-// ----------------------------------------------------------------------------------------
-// ----------------------------------------------------------------------------------------
-// ----------------------------------------------------------------------------------------
-// ----------------------------------------------------------------------------------------
-
-    template <
-        typename image_array
-        >
-    double test_shape_predictor (
-        const shape_predictor& sp,
-        const image_array& images,
-        const std::vector<std::vector<full_object_detection> >& objects,
-        const std::vector<std::vector<double> >& scales
-    )
-    {
-        // make sure requires clause is not broken
-
-        running_stats<double> rs;
-        for (int i = 0; i < objects.size(); ++i)
-        {
-            for (int j = 0; j < objects[i].size(); ++j)
-            {
-                // Just use a scale of 1 (i.e. no scale at all) if the caller didn't supply
-                // any scales.
-                const double scale = scales.size()==0 ? 1 : scales[i][j]; 
-
-                full_object_detection det = sp(images[i], objects[i][j].get_rect());
-
-                for (int k = 0; k < det.num_parts(); ++k)
-                {
-                    double score = length(det.part(k) - objects[i][j].part(k))/scale;
-                    rs.add(score);
-                }
-            }
-        }
-        return rs.mean();
-    }
-
-// ----------------------------------------------------------------------------------------
-
-    template <
-        typename image_array
-        >
-    double test_shape_predictor (
-        const shape_predictor& sp,
-        const image_array& images,
-        const std::vector<std::vector<full_object_detection> >& objects
-    )
-    {
-        std::vector<std::vector<double> > no_scales;
-        return test_shape_predictor(sp, images, objects, no_scales);
-    }
-
-// ----------------------------------------------------------------------------------------
 
 }
 
