@@ -24,9 +24,6 @@
     <ClInclude Include="dlib\image_processing\full_object_detection.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="dlib\image_processing\frontal_face_detector.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="dlib\geometry\point_transforms.h">
       <Filter>头文件</Filter>
     </ClInclude>

@@ -38,7 +38,7 @@ int readDir(string path, std::vector<string> &names, string& dir) {
 
 template <class T>
 T load_ft(const char* fname){
-	T x; FileStorage f(fname, FileStorage::READ);
+	T x; cv::FileStorage f(fname, cv::FileStorage::READ);
 	f["ft object"] >> x; f.release(); return x;
 }
 //==============================================================================
@@ -59,6 +59,7 @@ void face_landmark()
 		deserialize("D:/data/shape_predictor_68_face_landmarks.dat") >> sp;
 		//save_ft("D:/data/1.yaml", sp);
 		//return;
+		//sp = load_ft<shape_predictor>("D:/data/1.yaml");
 
 		std::vector<string> names;
 		string dir;

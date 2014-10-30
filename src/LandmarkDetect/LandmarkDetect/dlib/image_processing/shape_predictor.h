@@ -25,8 +25,6 @@ namespace dlib
     {
         struct split_feature
         {
-            //int idx1;
-            //int idx2;
 			int idx1;
 			int idx2;
             float thresh;
@@ -76,15 +74,9 @@ namespace dlib
         // a tree is just a std::vector<impl::split_feature>.  We use this function to navigate the
         // tree nodes
         inline int left_child (int idx) { return 2*idx + 1; }
-        /*!
-            ensures
-                - returns the index of the left child of the binary tree node idx
-        !*/
+       
         inline int right_child (int idx) { return 2*idx + 2; }
-        /*!
-            ensures
-                - returns the index of the left child of the binary tree node idx
-        !*/
+       
 
         struct regression_tree
         {
@@ -94,16 +86,6 @@ namespace dlib
             inline const matrix<float,0,1>& operator()(
                 const std::vector<float>& feature_pixel_values
             ) const
-            /*!
-                requires
-                    - All the index values in splits are less than feature_pixel_values.size()
-                    - leaf_values.size() is a power of 2.
-                      (i.e. we require a tree with all the levels fully filled out.
-                    - leaf_values.size() == splits.size()+1
-                      (i.e. there needs to be the right number of leaves given the number of splits in the tree)
-                ensures
-                    - runs through the tree and returns the vector at the leaf we end up in.
-            !*/
             {
                 int i = 0;
                 while (i < splits.size())
@@ -113,7 +95,6 @@ namespace dlib
                     else
                         i = right_child(i);
                 }
-				//std::cout << leaf_values[i - splits.size()] << std::endl;
                 return leaf_values[i - splits.size()];
             }
 
@@ -129,11 +110,21 @@ namespace dlib
             }
 			void read(const cv::FileNode& node) {
 				assert(node.type() == cv::FileNode::MAP);
+				splits = std::vector<split_feature>(15);
 				cv::FileNode split_nodes = node["split"];
+				leaf_values = std::vector<matrix<float, 0, 1> >(16);
 				cv::FileNodeIterator it = split_nodes.begin(), it_end = split_nodes.end();
 				int idx = 0;
 				for (; it != it_end; ++it, idx++) {
 					(*it) >> splits[idx];
+				}
+
+				cv::Mat leafMat;
+				node["leaf_values"] >> leafMat;
+				for (int i = 0; i < leafMat.cols; i++) {
+					for (int j = 0; j < leafMat.rows; j++) {
+						leaf_values[i](j) = leafMat.at<float>(j, i);
+					}
 				}
 					
 			}
@@ -219,16 +210,6 @@ namespace dlib
             std::vector<int>& anchor_idx, 
             std::vector<dlib::vector<float,2> >& deltas
         )
-        /*!
-            requires
-                - shape.size()%2 == 0 
-                - shape.size() > 0
-            ensures
-                - #anchor_idx.size() == pixel_coordinates.size()
-                - #deltas.size()     == pixel_coordinates.size()
-                - for all valid i:
-                    - pixel_coordinates[i] == location(shape,#anchor_idx[i]) + #deltas[i]
-        !*/
         {
             anchor_idx.resize(pixel_coordinates.size());
             deltas.resize(pixel_coordinates.size());
@@ -272,11 +253,6 @@ namespace dlib
         inline point_transform_affine normalizing_tform (
             const rectangle& rect
         )
-        /*!
-            ensures
-                - returns a transform that maps rect.tl_corner() to (0,0) and rect.br_corner()
-                  to (1,1).
-        !*/
         {
             std::vector<vector<float,2> > from_points, to_points;
             from_points.push_back(rect.tl_corner()); to_points.push_back(point(0,0));
@@ -290,11 +266,6 @@ namespace dlib
         inline point_transform_affine unnormalizing_tform (
             const rectangle& rect
         )
-        /*!
-            ensures
-                - returns a transform that maps (0,0) to rect.tl_corner() and (1,1) to
-                  rect.br_corner().
-        !*/
         {
             std::vector<vector<float,2> > from_points, to_points;
             to_points.push_back(rect.tl_corner()); from_points.push_back(point(0,0));
@@ -315,22 +286,6 @@ namespace dlib
             const std::vector<dlib::vector<float,2> >& reference_pixel_deltas,
             std::vector<float>& feature_pixel_values
         )
-        /*!
-            requires
-                - image_type == an image object that implements the interface defined in
-                  dlib/image_processing/generic_image.h 
-                - reference_pixel_anchor_idx.size() == reference_pixel_deltas.size()
-                - current_shape.size() == reference_shape.size()
-                - reference_shape.size()%2 == 0
-                - max(mat(reference_pixel_anchor_idx)) < reference_shape.size()/2
-            ensures
-                - #feature_pixel_values.size() == reference_pixel_deltas.size()
-                - for all valid i:
-                    - #feature_pixel_values[i] == the value of the pixel in img_ that
-                      corresponds to the pixel identified by reference_pixel_anchor_idx[i]
-                      and reference_pixel_deltas[i] when the pixel is located relative to
-                      current_shape rather than reference_shape.
-        !*/
         {
             const matrix<float,2,2> tform = matrix_cast<float>(find_tform_between_shapes(reference_shape, current_shape).get_m());
             const point_transform_affine tform_to_img = unnormalizing_tform(rect);
@@ -358,8 +313,6 @@ namespace dlib
     class shape_predictor
     {
     public:
-
-
         shape_predictor (
         ) 
         {}
@@ -369,18 +322,6 @@ namespace dlib
             const std::vector<std::vector<impl::regression_tree> >& forests_,
             const std::vector<std::vector<dlib::vector<float,2> > >& pixel_coordinates
         ) : initial_shape(initial_shape_), forests(forests_)
-        /*!
-            requires
-                - initial_shape.size()%2 == 0
-                - forests.size() == pixel_coordinates.size() == the number of cascades
-                - for all valid i:
-                    - all the index values in forests[i] are less than pixel_coordinates[i].size()
-                - for all valid i and j: 
-                    - forests[i][j].leaf_values.size() is a power of 2.
-                      (i.e. we require a tree with all the levels fully filled out.
-                    - forests[i][j].leaf_values.size() == forests[i][j].splits.size()+1
-                      (i.e. there need to be the right number of leaves given the number of splits in the tree)
-        !*/
         {
             anchor_idx.resize(pixel_coordinates.size());
             deltas.resize(pixel_coordinates.size());
@@ -392,10 +333,6 @@ namespace dlib
 
         int num_parts (
         ) const
-        /*!
-            ensures
-                - returns the number of points in the shape
-        !*/
         {
             return initial_shape.size()/2;
         }
@@ -405,13 +342,6 @@ namespace dlib
             const image_type& img,
             const rectangle& rect
         ) const
-        /*!
-            ensures
-                - runs the tree regressor on the detection rect inside img and returns a 
-                  full_object_detection DET such that:
-                    - DET.get_rect() == rect
-                    - DET.num_parts() == num_parts()
-        !*/
         {
             using namespace impl;
             matrix<float,0,1> current_shape = initial_shape;
@@ -456,9 +386,65 @@ namespace dlib
 
 		void read(const cv::FileNode& node) {
 			assert(node.type() == cv::FileNode::MAP);
-			cv::FileNode split_nodes = node["split"];
-			cv::FileNodeIterator it = split_nodes.begin(), it_end = split_nodes.end();
-			int idx = 0;
+			//cv::Mat shape0(136, 1, CV_32FC1); 
+			cv::Mat shape0;
+			node["init_shape"] >> shape0;
+			initial_shape.set_size(136, 1);
+			for (int i = 0; i < 136; i++) {
+				//initial_shape(i) = shape0.at<float>(i, 1);
+				std::cout << i << " " << shape0.at<float>(1, i) << " ";
+			}
+			forests = std::vector<std::vector<impl::regression_tree> >(15);
+			for (int i = 0; i < 15; i++) {
+				forests[i] = std::vector<impl::regression_tree>(500);
+			}
+			anchor_idx = std::vector<std::vector<int> >(15);
+			for (int i = 0; i < 15; i++) {
+				anchor_idx[i] = std::vector<int>(15);
+			}
+			deltas = std::vector<std::vector<dlib::vector<float, 2> > >(15);
+			for (int i = 0; i < 15; i++) {
+				deltas[i] = std::vector<dlib::vector<float, 2> >(500);
+			}
+			
+			char forest_name[50];
+			for (int i = 0; i < 15; i++) {
+				sprintf(forest_name, "forest_name_%03d", i);
+				cv::FileNode forest_node = node[forest_name];
+				cv::FileNodeIterator it = forest_node.begin(), it_end = forest_node.end();
+				int idx = 0;
+				for (; it != it_end; ++it, idx++) {
+						(*it) >> forests[i][idx];
+				}
+			}
+
+			char anchor_name[50];
+			for (int i = 0; i < 15; i++) {
+				sprintf(anchor_name, "anchor_idx_%03d", i);
+				cv::FileNode anchor_node = node[anchor_name];
+				cv::FileNodeIterator it = anchor_node.begin(), it_end = anchor_node.end();
+				int idx = 0;
+				for (; it != it_end; ++it, idx++) {
+						(*it) >> anchor_idx[i][idx];
+				}
+			}
+			std::cout << "anchor over" << std::endl;
+
+			char delta_name[50];
+			for (int i = 0; i < 15; i++) {
+				sprintf(delta_name, "delta_name_%03d", i);
+				cv::FileNode delta_node = node[delta_name];
+				cv::FileNodeIterator it = delta_node.begin(), it_end = delta_node.end();
+				int idx = 0;
+				std::cout << i << std::endl;
+				for (; it != it_end; ++it, idx++) {
+						(*it)["delta_x"] >> deltas[i][idx](0);
+						(*it)["delta_y"] >> deltas[i][idx](1);
+						//std::cout << i << " " << idx << " " <<  deltas[i][idx](1);
+				}
+			}
+			std::cout << "shape over" << std::endl;
+
 
 		}
 
@@ -470,10 +456,8 @@ namespace dlib
 				shape0.at<float>(i, 1) = initial_shape(i);
 			}
 			fs << "init_shape" << shape0;
-			//fs << "forests" << "[";
 			char forest_name[50];
 			for (int i = 0; i < 15; i++) {
-				//fs << "forest" << "[";
 				sprintf(forest_name, "forest_name_%03d", i);
 				fs << forest_name << "[";
 				for (int j = 0; j < 500; j++) {
@@ -481,7 +465,6 @@ namespace dlib
 				}
 				fs << "]";
 			}
-			//fs << "]";
 
 			char anchor_name[50];
 			for (int i = 0; i < 15; i++) {
@@ -740,10 +723,6 @@ namespace dlib
                 << "\n\t You must give at least one full_object_detection if you want to train a shape model and it must have parts."
             );
 
-
-
-
-
             rnd.set_seed(get_random_seed());
 
             std::vector<training_sample> samples;
@@ -815,7 +794,6 @@ namespace dlib
         struct training_sample 
         {
             /*!
-
             CONVENTION
                 - feature_pixel_values.size() == get_feature_pool_size()
                 - feature_pixel_values[j] == the value of the j-th feature pool
@@ -1109,8 +1087,6 @@ namespace dlib
             return pixel_coordinates;
         }
 
-
-
         mutable dlib::rand rnd;
 
         int _cascade_depth;
@@ -1141,36 +1117,6 @@ namespace dlib
     )
     {
         // make sure requires clause is not broken
-#ifdef ENABLE_ASSERTS
-        DLIB_CASSERT( images.size() == objects.size() ,
-            "\t double test_shape_predictor()"
-            << "\n\t Invalid inputs were given to this function. "
-            << "\n\t images.size():  " << images.size() 
-            << "\n\t objects.size(): " << objects.size() 
-        );
-        for (int i = 0; i < objects.size(); ++i)
-        {
-            for (int j = 0; j < objects[i].size(); ++j)
-            {
-                DLIB_CASSERT(objects[i][j].num_parts() == sp.num_parts(), 
-                    "\t double test_shape_predictor()"
-                    << "\n\t Invalid inputs were given to this function. "
-                    << "\n\t objects["<<i<<"]["<<j<<"].num_parts(): " << objects[i][j].num_parts()
-                    << "\n\t sp.num_parts(): " << sp.num_parts()
-                );
-            }
-            if (scales.size() != 0)
-            {
-                DLIB_CASSERT(objects[i].size() == scales[i].size(), 
-                    "\t double test_shape_predictor()"
-                    << "\n\t Invalid inputs were given to this function. "
-                    << "\n\t objects["<<i<<"].size(): " << objects[i].size()
-                    << "\n\t scales["<<i<<"].size(): " << scales[i].size()
-                );
-
-            }
-        }
-#endif
 
         running_stats<double> rs;
         for (int i = 0; i < objects.size(); ++i)
