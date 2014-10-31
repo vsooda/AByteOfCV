@@ -60,7 +60,7 @@ void face_landmark()
 		//save_ft("D:/data/1.yaml", sp);
 		//return;
 		sp = load_ft<shape_predictor>("D:/data/1.yaml");
-		//save_ft("D:/data/13.yaml", sp);
+		//save_ft("D:/data/14.yaml", sp);
 		//return;
 
 		std::vector<string> names;
@@ -78,21 +78,37 @@ void face_landmark()
 			pyramid_up(img);
 
 			std::vector<dlib::rectangle> dets = detector(img);
+			cv::Size sz(src.cols * 2, src.rows * 2);
+			resize(src, src, sz);
 
-			std::vector<full_object_detection> shapes;
+			for (int k = 0; k < dets.size(); k++) {
+				cv::rectangle(src, cv::Point(dets[k].left(), dets[k].top()),
+					cv::Point(dets[k].right(), dets[k].bottom()), cv::Scalar(255, 0, 0));
+			}
+			cout << dets[0] << std::endl;
+			/*cv::imshow("det", src);
+			cv::waitKey();
+
+			continue;*/
+
+			cv::Mat gray;
+			cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+
+			std::vector<cv::Mat> shapes;
 			for (unsigned long j = 0; j < dets.size(); ++j)
 			{
-				full_object_detection shape = sp(img, dets[j]);
+				cv::Mat shape = sp(gray, dets[j]);
+				
 				shapes.push_back(shape);
 			}
+			
 
 
 			for (int j = 0; j < shapes.size(); j++) {
-				full_object_detection res = shapes[j];
-				for (int i = 0; i < 68; i++) {
-					point pt = res.part(i);
-					int tempx = pt.x() / 2;
-					int tempy = pt.y() / 2;
+				cv::Mat res = shapes[j];
+				for (int k = 0; k < 68; k++) {
+					int tempx = res.at<float>(2 * k, 0);
+					int tempy = res.at<float>(2*k+1, 0);
 					cv::circle(src, cv::Point(tempx, tempy), 1, cv::Scalar(255, 255, 0));
 				}
 			}
