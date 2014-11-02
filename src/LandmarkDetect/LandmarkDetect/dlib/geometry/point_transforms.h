@@ -295,6 +295,7 @@ namespace dlib
         if (sigma_from != 0)
             c = 1.0/sigma_from * trace(d*s);
         vector<double,2> t = mean_to - c*r*mean_from;
+		std::cout << c*r << std::endl << std::endl;;
 
         return point_transform_affine(c*r, t);
     }
