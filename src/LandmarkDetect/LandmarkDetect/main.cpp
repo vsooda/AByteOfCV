@@ -52,39 +52,15 @@ void face_landmark()
 {
 	try
 	{
-		//frontal_face_detector detector = get_frontal_face_detector();
 		frontal_face_detector detector;
 		deserialize("frontface.dat") >> detector;
-		dlib::shape_predictor sp;
-		//deserialize("D:/data/shape_predictor_68_face_landmarks.dat") >> sp;
-		//save_ft("D:/data/1.yaml", sp);
-		//return;
-		sp = load_ft<dlib::shape_predictor>("D:/data/1.yaml");
-		//save_ft("D:/data/14.yaml", sp);
-		//return;
+		customCV::shape_predictor sp;
+		sp = load_ft<customCV::shape_predictor>("D:/data/1.yaml");
 
 		std::vector<string> names;
 		string dir;
-		//int cnt = readDir("D:/data/*.jpg", names, dir);
-		int cnt = readDir("D:/wkdir/face/*.jpg", names, dir);
+		int cnt = readDir("D:/wkdir/images/*.jpg", names, dir);
 		for (int i = 0; i < cnt; i++) {
-			//string filename = dir + names[i];
-			//cout << "processing image " << filename << endl;
-			//array2d<rgb_pixel> img;
-			//cv::Mat src = cv::imread(filename.c_str());
-			//dlib::cv_image<rgb_pixel> *pimg = new dlib::cv_image<rgb_pixel>(src);
-			//assign_image(img, *pimg);
-
-			//cv::Mat src2;
-			//src.convertTo(src2, CV_32FC3);
-			//cv::Mat avg(src2.size(), CV_32FC1, cv::Scalar(0));
-			//for (int x = 0; x < avg.cols; x++) {
-			//	for (int y = 0; y < avg.rows; y++) {
-			//		cv::Vec3f temp = src2.at<cv::Vec3f>(y, x);
-			//		avg.at<float>(y, x) = (temp[0] + temp[1] + temp[2]) / 3;
-			//	}
-			//}
-			//cvtColor(src, gray, cv::COLOR_BGR2GRAY);
 			string filename = dir + names[i];
 			cout << "processing image " << filename << endl;
 			array2d<rgb_pixel> img;
@@ -103,24 +79,27 @@ void face_landmark()
 				}
 			}
 
-
 			std::vector<dlib::rectangle> dets = detector(img);
 
 			std::vector<cv::Mat> shapes;
 			for (unsigned long j = 0; j < dets.size(); ++j)
 			{
-				cv::Mat shape = sp(avg, dets[j]);
+				cv::Rect rect;
+				rect.x = dets[j].left();
+				rect.y = dets[j].top();
+				rect.width = dets[j].right() - dets[j].left();
+				rect.height = dets[j].bottom() - dets[j].top();
+				cv::Mat shape = sp(avg, rect);
 				
 				shapes.push_back(shape);
 			}
-			
 
 			for (int j = 0; j < shapes.size(); j++) {
 				cv::Mat res = shapes[j];
 				for (int k = 0; k < 68; k++) {
 					int tempx = res.at<float>(0, k);
 					int tempy = res.at<float>(1, k);
-					cv::circle(src, cv::Point(tempx, tempy), 1, cv::Scalar(255, 255, 0));
+					cv::circle(src, cv::Point(tempx, tempy), 2, cv::Scalar(255, 255, 255));
 				}
 			}
 			for (int k = 0; k < dets.size(); k++) {
@@ -267,6 +246,6 @@ std::vector<std::vector<double> > get_interocular_distances(
 
 int main() {
 	//freopen("cv.txt", "w", stdout);
-	face_landmark1();
+	face_landmark();
 }
 

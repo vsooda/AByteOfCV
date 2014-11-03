@@ -1,12 +1,4 @@
-﻿// Copyright (C) 2014  Davis E. King (davis@dlib.net)
-// License: Boost Software License   See LICENSE.txt for the full license.
-#ifndef DLIB_SHAPE_PREDICToR_H_
-#define DLIB_SHAPE_PREDICToR_H_
-
-#include "full_object_detection.h"
-#include "../algs.h"
-#include "../matrix.h"
-#include "../pixel.h"
+﻿#pragma once 
 #include <opencv2/core/core.hpp>
 #include "common.h"
 
@@ -21,7 +13,6 @@ struct AffineTransform {
 	cv::Mat_<float> rotation;
 	cv::Mat_<float> b;
 	AffineTransform(cv::Mat_<float> rotation_, cv::Mat_<float> b_) {
-		//rotation = rotation_;
 		rotation_.copyTo(rotation);
 		b_.copyTo(b);
 	}
@@ -31,12 +22,7 @@ struct AffineTransform {
 	cv::Mat getB() {
 		return b;
 	}
-	//const dlib::vector<double, 2> operator() (
-	//	const dlib::vector<double, 2>& p
-	//	) const
-	//{
-	//	return m*p + b;
-	//}
+
 	cv::Mat operator()(const cv::Mat& locateMat) {
 		cv::Mat ret;
 		ret = rotation * locateMat;
@@ -51,7 +37,7 @@ struct AffineTransform {
 };
 
 
-namespace dlib
+namespace customCV
 {
 
 	float pointDistance(cv::Point2f lhs, cv::Point2f rhs) {
@@ -59,9 +45,6 @@ namespace dlib
 		return temp.x * temp.x + temp.y * temp.y;
 	}
 // ----------------------------------------------------------------------------------------
-	struct ShapeLandmark {
-		std::vector<float> positions;
-	};
 
     namespace impl
     {
@@ -244,41 +227,16 @@ namespace dlib
         }
 
 
-		cv::Mat point2Mat(const cv::Point2f& pt, const rectangle& rect) { //cv::Point& pt is wrong !!!
+		cv::Mat point2Mat(const cv::Point2f& pt) { //cv::Point& pt is wrong !!!
 			cv::Mat ptMat(2, 1, CV_32FC1);
 			ptMat.at<float>(0, 0) = pt.x;
 			ptMat.at<float>(1, 0) = pt.y;
 			return ptMat;
 		}
-		cv::Mat_<float> ProjectShape(const cv::Mat_<float>& shape, const rectangle& bounding_box){
-			cv::Mat_<float> temp(shape.rows, 1);
-			int width = bounding_box.right() - bounding_box.left();
-			int height = bounding_box.bottom() - bounding_box.top();
-			int ptNum = shape.rows / 2; 
-			for (int j = 0; j < ptNum;j++){
-				temp(j*2, 0) = (shape(j*2, 0) - bounding_box.left()) / width ;
-				temp(j*2+1, 1) = (shape(j*2+1, 0) - bounding_box.top()) / height;
-			}
-			return temp;
-		}
-
-		cv::Mat_<float> ReProjectShape(const cv::Mat_<float>& shape, const rectangle& bounding_box){
-			cv::Mat_<float> temp(shape.rows, 1);
-			int width = bounding_box.right() - bounding_box.left();
-			int height = bounding_box.bottom() - bounding_box.top();
-			int ptNum = shape.rows / 2; 
-			for (int j = 0; j < ptNum; j++){
-				temp(2*j, 0) = (shape(2 * j, 0) * width + bounding_box.left());
-				temp(2*j+1, 0) = (shape(2 * j + 1, 0) * height + bounding_box.top());
-			} 
-			return temp;
-		}
 
 		AffineTransform SimilarityTransform(const cv::Mat_<float>& sp1, const cv::Mat_<float>& sp2){
 			int ptNum = sp1.rows / 2;
 			double dptNum = ptNum * 1.0;
-			//std::cout << "size " << sp2.size() << " " << sp1.size() << std::endl;
-			//std::cout << "ptnum " << ptNum << std::endl;
 			cv::Mat_<double> shape1(2, ptNum);
 			cv::Mat_<double> shape2(2, ptNum);
 			for (int i = 0; i < ptNum; i++) {
@@ -292,7 +250,6 @@ namespace dlib
 			rotation = cv::Mat::zeros(2, 2, CV_64FC1);
 			scale = 0;
 
-			//cv::Mat_<double> mean_from(2, 1, cv::Scalar(0.0)), mean_to(2, 1, cv::Scalar(0.0));
 			cv::Mat_<double> mean_from = cv::Mat(2, 1, CV_64FC1, cv::Scalar(0));
 			cv::Mat_<double> mean_to = cv::Mat(2, 1, CV_64FC1, cv::Scalar(0));
 
@@ -306,8 +263,6 @@ namespace dlib
 
 			mean_from = mean_from / dptNum;
 			mean_to = mean_to / dptNum;
-			//std::cout << mean_from << std::endl;
-			//std::cout << mean_to << std::endl;
 			double sigma_from = 0, sigma_to = 0;
 			for (int i = 0; i < ptNum; i++) {
 				double diff1 = (shape1(0, i) - mean_from(0, 0)) * (shape1(0, i) - mean_from(0, 0)) + (shape1(1, i) - mean_from(1, 0)) * (shape1(1, i) - mean_from(1, 0));
@@ -331,7 +286,7 @@ namespace dlib
 			//std::cout << sigma_to << std::endl;
 			cv::SVD svd;
 			cv::Mat u, vt, d, s, w;
-			//matlab µÄsvdºÍÕâÀïµÄw²»ÏàÍ¬ http://stackoverflow.com/questions/12029486/matlab-svd-output-in-opencv
+			//matlab diff form opencv http://stackoverflow.com/questions/12029486/matlab-svd-output-in-opencv
 			//svd.compute(cov, d, u, vt, cv::SVD::FULL_UV);
 			cv::SVDecomp(cov, w, u, vt, cv::SVD::FULL_UV);
 			d = cv::Mat(cov.size(), CV_64FC1, cv::Scalar(0));
@@ -359,12 +314,10 @@ namespace dlib
 				c = 1.0 / sigma_from * cv::trace(d * s)[0];
 			}
 			
-
 			r = c * r;
-			//r = r.t();
+			r = r.t();
 			cv::Mat t = mean_to - r * mean_from;
 
-			//t = t.t();
 			std::cout << r << std::endl << std::endl;;
 
 			t.convertTo(t, CV_32F);
@@ -375,15 +328,15 @@ namespace dlib
     // ------------------------------------------------------------------------------------
 		
 		inline AffineTransform normalizing_tform(
-            const rectangle& rect
+            const cv::Rect& rect
         )
         {
 			cv::Mat_<float>sp1 = cv::Mat(6, 1, CV_32F);
 			cv::Mat_<float>sp2 = cv::Mat(6, 1, CV_32F);
-			float left = rect.left();
-			float right = rect.right();
-			float top = rect.top();
-			float bottom = rect.bottom();
+			float left = rect.x;
+			float right = rect.x + rect.width;
+			float top = rect.y;
+			float bottom = rect.y + rect.height;
 			sp1(0, 0) = left;
 			sp1(1, 0) = top;
 			sp1(2, 0) = right;
@@ -402,15 +355,15 @@ namespace dlib
     // ------------------------------------------------------------------------------------
 
 		inline AffineTransform unnormalizing_tform(
-            const rectangle& rect
+            const cv::Rect& rect
         )
         {
 			cv::Mat_<float>sp1 = cv::Mat(6, 1, CV_32F);
 			cv::Mat_<float>sp2 = cv::Mat(6, 1, CV_32F);
-			float left = rect.left();
-			float right = rect.right();
-			float top = rect.top();
-			float bottom = rect.bottom();
+			float left = rect.x;
+			float right = rect.x + rect.width;
+			float top = rect.y;
+			float bottom = rect.y + rect.height;
 			sp1(0, 0) = left;
 			sp1(1, 0) = top;
 			sp1(2, 0) = right;
@@ -429,7 +382,7 @@ namespace dlib
 
 		void extract_feature_pixel_values(
 			cv::Mat img,
-            const rectangle& rect,
+            const cv::Rect& rect,
             const cv::Mat& current_shape,
             const cv::Mat& reference_shape,
             const std::vector<int>& reference_pixel_anchor_idx,
@@ -451,8 +404,8 @@ namespace dlib
                 // Compute the point in the current shape corresponding to the i-th pixel and
                 // then map it from the normalized shape space into pixel space.
                 //point p = tform_to_img(tform*reference_pixel_deltas[i] + location(current_shape, reference_pixel_anchor_idx[i]));
-				cv::Mat tempDelta = point2Mat(reference_pixel_deltas[i], rect);
-				cv::Mat locateMat = point2Mat(location(current_shape, reference_pixel_anchor_idx[i]), rect);
+				cv::Mat tempDelta = point2Mat(reference_pixel_deltas[i]);
+				cv::Mat locateMat = point2Mat(location(current_shape, reference_pixel_anchor_idx[i]));
 				//cv::Mat pointMat = ReProjectShape(tform * tempDelta + locateMat, rect);
 				cv::Mat pointMat = tform_to_img(tform * tempDelta + locateMat);
 				cv::Point p;
@@ -505,7 +458,7 @@ namespace dlib
 
         cv::Mat operator()(
             cv::Mat& img,
-            const rectangle& rect
+            const cv::Rect& rect
         ) const
         {
             using namespace impl;
@@ -514,12 +467,9 @@ namespace dlib
             std::vector<float> feature_pixel_values;
             for (int iter = 0; iter < forests.size(); ++iter)
             {
-				//std::cout << "current_shape " << current_shape.size() << "  initial_shape " << initial_shape.size() << std::endl;
                 extract_feature_pixel_values(img, rect, current_shape, initial_shape, anchor_idx[iter], deltas[iter], feature_pixel_values);
-				//std::cout << "current_shape " << current_shape.size() << "  initial_shape " << initial_shape.size() << std::endl;
                 // evaluate all the trees at this level of the cascade.
 				for (int i = 0; i < forests[iter].size(); ++i) {
-					//std::cout << "forest: " << forests[iter][i](feature_pixel_values).size() << std::endl;
 					current_shape += forests[iter][i](feature_pixel_values);
 				}
             }
@@ -533,10 +483,8 @@ namespace dlib
 			std::cout << "tform_to_img "<< std::endl;
 			std::cout << tform_to_img.getB().size() << std::endl;
 			std::cout << tform_to_img.getB() << std::endl;
-			//std::cout << tform_to_img << std::endl;
 
 			cv::Mat imgShape = tform_to_img(currentMat);
-			//cv::Mat imgShape = ReProjectShape(current_shape, rect);
 			return imgShape;
         }
 
@@ -591,12 +539,8 @@ namespace dlib
 				for (; it != it_end; ++it, idx++) {
 						(*it)["delta_x"] >> deltas[i][idx].x;
 						(*it)["delta_y"] >> deltas[i][idx].y;
-						//std::cout << i << " " << idx << " " <<  deltas[i][idx](1);
 				}
 			}
-			/*for (int i = 0; i < 50; i++) {
-				std::cout << deltas[0][i].x << " " << deltas[0][i].y << std::endl;
-				}*/
 			std::cout << "shape over" << std::endl;
 
 
@@ -659,5 +603,4 @@ namespace dlib
 
 }
 
-#endif // DLIB_SHAPE_PREDICToR_H_
 

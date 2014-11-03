@@ -21,9 +21,6 @@
     <ClInclude Include="dlib\image_processing\shape_predictor.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="dlib\image_processing\full_object_detection.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="dlib\geometry\point_transforms.h">
       <Filter>头文件</Filter>
     </ClInclude>
