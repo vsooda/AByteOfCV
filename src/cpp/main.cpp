@@ -11,7 +11,10 @@ using namespace cv;
 
 void illumTransform_test() {
 	IllumtrasformTest illum;
-	illum.apply("../data/022.jpg", NULL, "../data/std_512.jpg");
+	//illum.apply("../data/022.jpg", NULL, "../data/std_512.jpg");
+    //cv::Mat dst = illum.apply("../data/000000000000000029_head.png", NULL, "../data/std_512.jpg");
+    cv::Mat dst = illum.apply("../data/000000000000000032_head.png", NULL, "../data/std_512.jpg");
+    imwrite("dst1.png", dst);
 }
 
 
@@ -278,7 +281,7 @@ void tpsWarpIllum() {
     //vector<int> det(68 * 2);
     vector<vector<int> > dets;
     vector<cv::Mat> images;
-    FILE* fin = fopen("/home/sooda/data/face1/result/1.txt", "r");
+    FILE* fin = fopen("/Users/noneknow//data/face1/result/1.txt", "r");
     char filename[80];
     for(int i = 0; i < filenum; i++) {
         int cnt = fscanf(fin, "%s%*c", filename);
@@ -437,37 +440,105 @@ void showHelenDatabase() {
     int filenum = 50;
     int landmarknum = 194;
     string basename = "/home/sooda/data/helen/";
-    FILE* fin = fopen("/home/sooda/data/helen/annotation1.txt", "r");
+    FILE* fin = fopen("/home/sooda/data/helen/annotation_dlib.txt", "r");
     char filename[80];
+    cv::namedWindow("img", 0);
     for(int i = 0; i < filenum; i++) {
         int cnt = fscanf(fin, "%s%*c", filename);
+        string fullname = basename + filename;
+        cv::Mat img = cv::imread(fullname.c_str());
         int tempx, tempy, tempw, temph;
         fscanf(fin, "%d %d %d %d%*c", &tempx, &tempy, &tempw, &temph);
         vector<cv::Point> landmark;
         for(int j = 0; j < landmarknum; j++) { 
             int x, y;
             fscanf(fin, "%d %d%*c", &x, &y);
+            char msg[20];
+            sprintf(msg, "%3d", j%100);
+            putText(img, msg, cv::Point(x, y), CV_FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0, 0, 255)); 
+            //cv::circle(img, cv::Point(x, y), 2, cv::Scalar(255, 0, 255));
+            //cv::imshow("img", img);
+            //cv::waitKey();
+        }
+        std::cout << fullname << std::endl;
+        cv::rectangle(img, cv::Point(tempx, tempy), cv::Point(tempw, temph), cv::Scalar(255, 255, 0));
+        //cv::rectangle(img, cv::Point(tempy, tempx), cv::Point(temph, tempw), cv::Scalar(255, 0, 0));
+        cv::imshow("img", img);
+        cv::waitKey();
+        imwrite("an.jpg", img);
+    }
+
+}
+
+void showLfpwDatabase() {
+    int filenum = 50;
+    //int landmarknum = 68;
+    int landmarknum = 7;
+    string basename = "/home/sooda/data/lfpw/trainset/";
+    FILE* fin = fopen("/home/sooda/data/lfpw/lfpw_train_7.txt", "r");
+    char filename[80];
+    for(int i = 0; i < filenum; i++) {
+        int cnt = fscanf(fin, "%s%*c", filename);
+        string fullname = basename + filename;
+        int tempx, tempy, tempw, temph;
+        fscanf(fin, "%d %d %d %d%*c", &tempx, &tempy, &tempw, &temph);
+        vector<cv::Point> landmark;
+        cv::Mat img = cv::imread(fullname.c_str());
+        for(int j = 0; j < landmarknum; j++) { 
+            int x, y;
+            fscanf(fin, "%d %d%*c", &x, &y);
+            cv::circle(img, cv::Point(x, y), 2, cv::Scalar(255, 0, 255));
             std::cout << x << " " << y << std::endl;
         }
-        string fullname = basename + filename;
         std::cout << fullname << std::endl;
-        cv::Mat img = cv::imread(fullname.c_str());
         cv::rectangle(img, cv::Point(tempx, tempy), cv::Point(tempw, temph), cv::Scalar(255, 255, 0));
         //cv::rectangle(img, cv::Point(tempy, tempx), cv::Point(temph, tempw), cv::Scalar(255, 0, 0));
         cv::imshow("img", img);
         cv::waitKey();
     }
-        
+}
 
+void showSelfDatabase() {
+    int filenum = 200;
+    //int landmarknum = 68;
+    int landmarknum = 68;
+    string basename = "/Users/noneknow/data/self/trainset/";
+    FILE* fin = fopen("/Users/noneknow/data/self/self_dlib.txt", "r");
+    char filename[80];
+    for(int i = 0; i < filenum; i++) {
+        int cnt = fscanf(fin, "%s%*c", filename);
+        string fullname = basename + filename;
+        int tempx, tempy, tempw, temph;
+        fscanf(fin, "%d %d %d %d%*c", &tempx, &tempy, &tempw, &temph);
+        vector<cv::Point> landmark;
+        cv::Mat img = cv::imread(fullname.c_str());
+        for(int j = 0; j < landmarknum; j++) { 
+            int x, y;
+            fscanf(fin, "%d %d%*c", &x, &y);
+            char msg[20];
+            sprintf(msg, "%3d", j%100);
+            putText(img, msg, cv::Point(x, y), CV_FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0, 0, 255)); 
+            //cv::circle(img, cv::Point(x, y), 2, cv::Scalar(255, 0, 255));
+            std::cout << x << " " << y << std::endl;
+        }
+        std::cout << fullname << std::endl;
+        cv::rectangle(img, cv::Point(tempx, tempy), cv::Point(tempw, temph), cv::Scalar(255, 255, 0));
+        //cv::rectangle(img, cv::Point(tempy, tempx), cv::Point(temph, tempw), cv::Scalar(255, 0, 0));
+        cv::imshow("img", img);
+        cv::waitKey();
+        cv::imwrite("template.jpg", img);
+    }
 }
 
 
 int main() {
-    showHelenDatabase();
-    //tpsWarpIllum();
+    //showSelfDatabase();
+   // showLfpwDatabase();
+   // showHelenDatabase();
+   // tpsWarpIllum();
 	//guideIllumTestBatch();
 	//return 0;
-//	illumTransform_test();
+	illumTransform_test();
 //	guideIllum_test();
 //	quilt_test("../data/1.bmp", "../data/dcc.png", 512, 40, 2);
 //	gcoTest();
