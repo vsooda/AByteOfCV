@@ -48,3 +48,5 @@
 #pragma comment( lib, cvLIB("imgproc"))
 #pragma comment( lib, cvLIB("highgui"))
 #pragma comment( lib, cvLIB("photo"))
+#pragma comment( lib, cvLIB("viz"))
+#pragma comment( lib, cvLIB("calib3d"))
