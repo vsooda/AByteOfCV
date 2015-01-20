@@ -1,3 +1,5 @@
+#ifndef ESR_SHAPE_H
+#define ESR_SHAPE_H
 #include "dlib/image_processing.h"
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
@@ -15,7 +17,10 @@ public:
 	~EsrShape();
 	void  detect(const cv::Mat& src);
 	void  draw(cv::Mat& src);
+	cv::Mat getInitShape();  //1 * landmark * 2 
 	std::vector<cv::Point2f> getFilterPts();
+	std::vector<cv::Point2f> getPts();
+	cv::Rect getRect();
 private:
 	frontal_face_detector _detector;
 	customCV::shape_predictor _sp;
@@ -54,7 +59,7 @@ void  EsrShape::detect(const cv::Mat& src)
 	for (int x = 0; x < avg.cols; x++) {
 		for (int y = 0; y < avg.rows; y++) {
 			cv::Vec3b temp = src.at<cv::Vec3b>(y, x);
-			avg.at<float>(y, x) = temp[0] / 3 + temp[1] / 3 + temp[2] /3 ;
+			avg.at<float>(y, x) = temp[0] / 3 + temp[1] / 3 + temp[2] / 3;
 		}
 	}
 	std::cout << "detect ok" << std::endl;
@@ -110,3 +115,17 @@ std::vector<cv::Point2f> EsrShape::getFilterPts() {
 		return _pts;
 	}
 }
+
+std::vector<cv::Point2f> EsrShape::getPts() {
+	return _pts;
+}
+
+cv::Rect EsrShape::getRect() {
+	return _rect;
+}
+
+cv::Mat EsrShape::getInitShape() {
+	return _sp.getInitShape();
+}
+
+#endif

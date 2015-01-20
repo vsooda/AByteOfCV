@@ -1,4 +1,5 @@
-﻿#pragma once 
+﻿#ifndef SHAPE_PREDICTOR_H
+#define SHAPE_PREDICTOR_H 
 #include <opencv2/core/core.hpp>
 #include "common.h"
 
@@ -33,10 +34,10 @@ struct AffineTransform {
 		cv::Mat ret;
 		ret = c * rotation * locateMat;
 		for (int i = 0; i < locateMat.cols; i++) {
-			ret.at<float>(0, i) = ret.at<float>(0, i) + b.at<float>(0, 0);
+			ret.at<float>(0, i) = ret.at<float>(0, i) +  b.at<float>(0, 0);
 		}
 		for (int i = 0; i < locateMat.cols; i++) {
-			ret.at<float>(1, i) = ret.at<float>(1, i) + b.at<float>(1, 0);
+			ret.at<float>(1, i) = ret.at<float>(1, i) +  b.at<float>(1, 0);
 		}
 		return ret;
 	}
@@ -615,3 +616,4 @@ namespace customCV
 }
 
 
+#endif

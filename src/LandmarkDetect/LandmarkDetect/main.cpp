@@ -10,6 +10,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <cmath>
 #include "esrShape.h"
+#include "estimatePos.h"
 
 const int landmark_num = 74;
 
@@ -111,33 +112,14 @@ void face_landmark()
 			std::cout << "tform" << tform  << " " << atf.getRotation_unscale() << std::endl;
 			double angle = asin(atf.getRotation_unscale().at<float>(0, 1)) * 180.0 / CV_PI;
 			std::cout << "rotation angle: " << angle << std::endl;
-			//std::cout << "current: " << currentMats[0] << std::endl;
-			//cv::Mat projectMat = tform * currentMats[0];
-			//std::cout << "project: " << projectMat << std::endl;
 			cv::Mat projectMat = tform * initShapeImageMat;
-			/*for (int i = 0; i < projectMat.cols; i++) {
-				for (int j = 0; j < projectMat.rows; j++) {
-					projectMat.at<float>(j)
-				}
-			}*/
 			for (int col = 0; col < projectMat.cols; col++) {
-				//std::cout << b.size() << std::endl;
-				//std::cout << projectMat.col(col).size() << std::endl;
 				projectMat.col(col) = projectMat.col(col) + b;
 			}
 			
 			initShapeImageMat = tform_to_img(initShapeImageMat);
-			//std::cout << initShape << std::endl;
 			projectMat = tform_to_img(projectMat);
 			
-			//std::cout << initShapeImageMat << std::endl;
-			/*for (int k = 0; k < landmark_num; k++) {
-				int tempx = initShapeImageMat.at<float>(0, k);
-				int tempy = initShapeImageMat.at<float>(1, k);
-				cv::circle(src, cv::Point(tempx, tempy), 2, cv::Scalar(255, 0, 255));
-
-				}*/
-
 			//norminize..
 			cv::Mat pmat(src.size(), CV_8UC3);
 			double minValue, maxValue;
@@ -145,8 +127,6 @@ void face_landmark()
 			for (int row = 0; row < 2; row++) {
 				temp = currentMats[0].row(row);
 				minMaxLoc(temp, &minValue, &maxValue);
-				/*std::cout << temp << std::endl;
-				std::cout << minValue << " " << maxValue << std::endl;*/
 				temp = (temp - minValue) / (maxValue - minValue);
 			}
 			for (int row = 0; row < 2; row++) {
@@ -155,18 +135,12 @@ void face_landmark()
 				temp = (temp - minValue) / (maxValue - minValue);
 			}
 
-
-			//std::cout << "scale: " << currentMats[0] << std::endl;
 			currentMats[0] = currentMats[0] * 500;
 			projectMat = projectMat * 500;
-			//std::cout << "scale ok: " << currentMats[0] << std::endl;
-
-
 
 			for (int k = 0; k < landmark_num; k++) {
 				int tempx = projectMat.at<float>(0, k);
 				int tempy = projectMat.at<float>(1, k);
-				//std::cout << tempx << " " << tempy << std::endl;
 				int tempx1 = currentMats[0].at<float>(0, k);
 				int tempy1 = currentMats[0].at<float>(1, k);
 				cv::circle(pmat, cv::Point(tempx, tempy), 3, cv::Scalar(255, 255, 255), -1);
@@ -180,10 +154,6 @@ void face_landmark()
 				cv::circle(initmat, cv::Point(tempx2, tempy2), 5, cv::Scalar(255, 255, 255));
 			}
 	
-			/*cv::Size sz(300, 300);
-			cv::resize(pmat, pmat, sz);
-			cv::resize(initmat, initmat, sz);
-			cv::resize(src, src, sz);*/
 			cv::imshow("project shape", pmat);
 			cv::imshow("init shape", initmat);
 			cv::imshow("dst", src);
@@ -197,6 +167,8 @@ void face_landmark()
 		cout << e.what() << endl;
 	}
 }
+
+
 
 
 void face_landmark1()
@@ -630,14 +602,30 @@ void landmark_test() {
 	cv::waitKey();
 }
 
+void poseEstimateTest() {
+	EstimatePos ep("frontface.dat", "D:/data/74.yaml");
+	std::vector<string> names;
+	string dir;
+	int cnt = readDir("D:/wkdir/helen_3/*.jpg", names, dir);
+	for (int i = 0; i < cnt; i++) {
+		string filename = dir + names[i];
+		cout << "processing image " << filename << endl;
+		cv::Mat src = cv::imread(filename.c_str());
+		cv::resize(src, src, cv::Size(500, 500));
+		ep.doEstimatePos(src);
+	}
+}
+
 
 
 int main() { 
+	poseEstimateTest();
+	return 0;
 	//landmark_test();
 	//return 0;
 	//freopen("cv.txt", "w", stdout);
 	//projectTest();
-	vizTest();
+	//vizTest();
 	//face_landmark();
 	//face_landmark1();
 }
