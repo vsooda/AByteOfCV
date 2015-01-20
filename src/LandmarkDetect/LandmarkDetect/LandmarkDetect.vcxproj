@@ -87,6 +87,7 @@
     <ClInclude Include="dlib\image_processing\shape_predictor1.h" />
     <ClInclude Include="esrShape.h" />
     <ClInclude Include="estimatePos.h" />
+    <ClInclude Include="view3d.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

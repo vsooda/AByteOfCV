@@ -11,6 +11,7 @@
 #include <cmath>
 #include "esrShape.h"
 #include "estimatePos.h"
+#include "view3d.h"
 
 const int landmark_num = 74;
 
@@ -410,7 +411,7 @@ void vizTest_bak() {
 cv::Mat cvcloud_load_base()
 {
 	cv::Mat cloud(1, 1952, CV_32FC3);
-	ifstream ifs("base.ply");
+	ifstream ifs("D:/data/base.ply");
 
 	string str;
 	for (size_t i = 0; i < 14; ++i)
@@ -429,7 +430,7 @@ cv::Mat cvcloud_load_base()
 
 cv::Mat getSelectPtMat(const cv::Mat& fullMat) {
 	int index[landmark_num];
-	ifstream ifs("pt.txt");
+	ifstream ifs("D:/data/pt.txt");
 	for (int i = 0; i < landmark_num; i++) {
 		ifs >> index[i];
 		std::cout << index[i] << std::endl;
@@ -490,12 +491,13 @@ void vizTest() {
 	cv::viz::Viz3d myWindow("Coordinate Frame");
 	myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem());
 	cv::Point3d cam_pos(0.0f, 0.0f, 5.0f), cam_focal_point(0.0f, 0.0f, 4.0f), cam_y_dir(0.0f, -1.0f, 0.0f);
-	cv::Affine3d cam_pose = cv::viz::makeCameraPose(cam_pos, cam_focal_point, cam_y_dir);
+	//cv::Affine3d cam_pose = cv::viz::makeCameraPose(cam_pos, cam_focal_point, cam_y_dir);
 	//使物体的坐标发生变化。坐标系本身没有变化
 	cv::Affine3f transform = cv::viz::makeTransformToGlobal(cv::Vec3f(-1.0f, 0.0f, 0.0f), cv::Vec3f(0.0f, -1.0f, 0.0f), cv::Vec3f(0.0f, 0.0f, -1.0f), cam_pos);
 
 	cv::Mat raw_cloud = cvcloud_load_base();
 	cv::Mat bunny_cloud = getSelectPtMat(raw_cloud);
+	//cv::Mat bunny_cloud = raw_cloud;
 	/*std::cout << bunny_cloud.size() << std::endl;
 	cv::FileStorage fs("pt.yml", cv::FileStorage::WRITE);
 	fs << "ftmatrix" << bunny_cloud;
@@ -581,7 +583,7 @@ cv::Mat doProject(cv::Mat ptMat) {
 }
 
 void projectTest() {
-	cv::FileStorage fs("pt.yml", cv::FileStorage::READ);
+	cv::FileStorage fs("D:/data/pt.yml", cv::FileStorage::READ);
 	cv::Mat ptMat;
 	fs["ftmatrix"] >> ptMat;
 	doProject(ptMat);
@@ -616,11 +618,17 @@ void poseEstimateTest() {
 	}
 }
 
+void view3dTest() {
+	View3D v3d("D:/data/base.ply", "D:/data/pt.txt");
+	v3d.showRotate();
+}
+
 
 
 int main() { 
-	poseEstimateTest();
-	return 0;
+	view3dTest();
+	//poseEstimateTest();
+	//return 0;
 	//landmark_test();
 	//return 0;
 	//freopen("cv.txt", "w", stdout);
