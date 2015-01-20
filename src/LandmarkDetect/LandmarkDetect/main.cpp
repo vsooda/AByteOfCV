@@ -8,50 +8,18 @@
 #include <opencv2/viz/vizcore.hpp>
 #include <fstream>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <cmath>
+#include "esrShape.h"
 
-const int landmark_num = 68;
+const int landmark_num = 74;
 
 using namespace dlib;
 using namespace std;
 
 typedef object_detector<scan_fhog_pyramid<pyramid_down<6> > > frontal_face_detector;
-
-int readDir(string path, std::vector<string> &names, string& dir) {
-	//vector<string> names;
-	dir = path.substr(0, path.find_last_of("\\/") + 1);
-	names.clear();
-	names.reserve(10000);
-	WIN32_FIND_DATAA fileFindData;
-	HANDLE hFind = ::FindFirstFileA(path.c_str(), &fileFindData);
-	if (hFind == INVALID_HANDLE_VALUE) {
-		return 0;
-	}
-
-	do{
-		if (fileFindData.cFileName[0] == '.')
-			continue; // filter the '..' and '.' in the path
-		if (fileFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			continue; // Ignore sub-folders
-		names.push_back(fileFindData.cFileName);
-	} while (::FindNextFileA(hFind, &fileFindData));
-	FindClose(hFind);
-	return (int)names.size();
-}
+cv::Mat doProject(cv::Mat ptMat);
 
 
-// ----------------------------------------------------------------------------------------
-
-template <class T>
-T load_ft(const char* fname){
-	T x; cv::FileStorage f(fname, cv::FileStorage::READ);
-	f["ft object"] >> x; f.release(); return x;
-}
-//==============================================================================
-template<class T>
-void save_ft(const char* fname, const T& x){
-	cv::FileStorage f(fname, cv::FileStorage::WRITE);
-	f << "ft object" << x; f.release();
-}
 
 void face_landmark()
 {
@@ -60,7 +28,7 @@ void face_landmark()
 		frontal_face_detector detector;
 		deserialize("frontface.dat") >> detector;
 		customCV::shape_predictor sp;
-		sp = load_ft<customCV::shape_predictor>("D:/data/1.yaml");
+		sp = load_ft<customCV::shape_predictor>("D:/data/74.yaml");
 
 		std::vector<string> names;
 		string dir;
@@ -112,18 +80,6 @@ void face_landmark()
 				currentMats.push_back(currentMat);
 				shapes.push_back(shape);
 			}
-			//shape 136 x 1
-			
-			//cv::Mat currentMat(2, LANDMARK_NUM, CV_32F);
-			//for (int i = 0; i < LANDMARK_NUM; i++) {
-			//	currentMat.at<float>(0, i) = current_shape.at<float>(2 * i, 0);
-			//	currentMat.at<float>(1, i) = current_shape.at<float>(2 * i + 1, 0);
-			//}
-			////std::cout << "tform_to_img "<< std::endl;
-			////std::cout << tform_to_img.getB().size() << std::endl;
-			////std::cout << tform_to_img.getB() << std::endl;
-
-			//cv::Mat imgShape = tform_to_img(currentMat);
 
 			for (int j = 0; j < currentMats.size(); j++) {
 				cv::Mat res = currentMats[j];
@@ -152,7 +108,9 @@ void face_landmark()
 			//AffineTransform atf = customCV::impl::SimilarityTransform(shapes[0], initShape);
 			cv::Mat tform = atf.getRotation();
 			cv::Mat b = atf.getB();
-			std::cout << b << std::endl;
+			std::cout << "tform" << tform  << " " << atf.getRotation_unscale() << std::endl;
+			double angle = asin(atf.getRotation_unscale().at<float>(0, 1)) * 180.0 / CV_PI;
+			std::cout << "rotation angle: " << angle << std::endl;
 			//std::cout << "current: " << currentMats[0] << std::endl;
 			//cv::Mat projectMat = tform * currentMats[0];
 			//std::cout << "project: " << projectMat << std::endl;
@@ -163,8 +121,8 @@ void face_landmark()
 				}
 			}*/
 			for (int col = 0; col < projectMat.cols; col++) {
-				std::cout << b.size() << std::endl;
-				std::cout << projectMat.col(col).size() << std::endl;
+				//std::cout << b.size() << std::endl;
+				//std::cout << projectMat.col(col).size() << std::endl;
 				projectMat.col(col) = projectMat.col(col) + b;
 			}
 			
@@ -187,8 +145,8 @@ void face_landmark()
 			for (int row = 0; row < 2; row++) {
 				temp = currentMats[0].row(row);
 				minMaxLoc(temp, &minValue, &maxValue);
-				std::cout << temp << std::endl;
-				std::cout << minValue << " " << maxValue << std::endl;
+				/*std::cout << temp << std::endl;
+				std::cout << minValue << " " << maxValue << std::endl;*/
 				temp = (temp - minValue) / (maxValue - minValue);
 			}
 			for (int row = 0; row < 2; row++) {
@@ -198,10 +156,10 @@ void face_landmark()
 			}
 
 
-			std::cout << "scale: " << currentMats[0] << std::endl;
+			//std::cout << "scale: " << currentMats[0] << std::endl;
 			currentMats[0] = currentMats[0] * 500;
 			projectMat = projectMat * 500;
-			std::cout << "scale ok: " << currentMats[0] << std::endl;
+			//std::cout << "scale ok: " << currentMats[0] << std::endl;
 
 
 
@@ -314,6 +272,7 @@ void face_landmark1()
 		cout << e.what() << endl;
 	}
 }
+
 
 
 
@@ -511,67 +470,44 @@ cv::Mat getSelectPtMat(const cv::Mat& fullMat) {
 	return selectPt;
 }
 
-void showRotate(cv::viz::Viz3d myWindow) {
+void showRotate(cv::Mat pts, cv::viz::Viz3d myWindow, cv::Affine3f transform) {
+	cv::namedWindow("project", 0);
 	while (!myWindow.wasStopped()) {
 		cv::Mat rot_vec = cv::Mat::zeros(1, 3, CV_32F);
 		int cnt = 0;
-		while (!myWindow.wasStopped())
-		{
-			if (cnt++ > 20) {
-				break;
+		for (int i = 2; i >= 0; i--) {
+			cnt = 0;
+			while (!myWindow.wasStopped())
+			{
+				if (cnt++ > 20) {
+					break;
+				}
+				/* Rotation using rodrigues */
+				/// Rotate around (1,1,1)
+				rot_vec.at<float>(0, i) = CV_PI * 0.005f * cnt;
+				//rot_vec.at<float>(0, 1) += CV_PI * 0.01f;
+				//rot_vec.at<float>(0, 2) += CV_PI * 0.01f;
+
+				/// Shift on (1,1,1)
+				//translation_phase += CV_PI * 0.01f;
+
+				cv::Mat rot_mat;
+				Rodrigues(rot_vec, rot_mat);
+				cv::Affine3f pose(rot_mat);
+				//cv::Vec3f pt = pts.at<cv::Vec3f>(0, 0);
+				//std::cout << pt << " to " << pose * pt << std::endl;
+				cv::Mat mvpResult;
+				pts.copyTo(mvpResult);
+				for (int j = 0; j < landmark_num; j++) {
+					mvpResult.at<cv::Vec3f>(0, j) = pose * pts.at<cv::Vec3f>(0, j);
+				}
+				cv::Mat view2d = doProject(mvpResult);
+				cv::imshow("project", view2d);
+				cv::waitKey(20);
+				
+				myWindow.setWidgetPose("bunny", transform * pose);
+				myWindow.spinOnce(1, true);
 			}
-			std::cout << cnt << std::endl;
-			/* Rotation using rodrigues */
-			/// Rotate around (1,1,1)
-			rot_vec.at<float>(0, 2) = CV_PI * 0.003f * cnt;
-			//rot_vec.at<float>(0, 1) += CV_PI * 0.01f;
-			//rot_vec.at<float>(0, 2) += CV_PI * 0.01f;
-
-			/// Shift on (1,1,1)
-			//translation_phase += CV_PI * 0.01f;
-
-			cv::Mat rot_mat;
-			Rodrigues(rot_vec, rot_mat);
-			cv::Affine3f pose(rot_mat);
-
-			myWindow.setWidgetPose("bunny", pose);
-			myWindow.spinOnce(1, true);
-			Sleep(100);
-		}
-		cnt = 0;
-		while (!myWindow.wasStopped()) {
-			if (cnt++ > 20) {
-				break;
-			}
-			std::cout << cnt << std::endl;
-			rot_vec.at<float>(0, 1) = CV_PI * 0.003f * cnt;
-			cv::Mat rot_mat;
-			Rodrigues(rot_vec, rot_mat);
-			cv::Affine3f pose(rot_mat);
-
-			myWindow.setWidgetPose("bunny", pose);
-			myWindow.spinOnce(1, true);
-			Sleep(100);
-		}
-		cnt = 0;
-		while (!myWindow.wasStopped()) {
-			if (cnt++ > 20) {
-				break;
-			}
-			std::cout << cnt << std::endl;
-			rot_vec.at<float>(0, 0) = CV_PI * 0.003f * cnt;
-			cv::Mat rot_mat;
-			Rodrigues(rot_vec, rot_mat);
-			cv::Affine3f pose(rot_mat);
-			//std::cout << rot_mat << std::endl;
-			myWindow.setWidgetPose("bunny", pose);
-			myWindow.spinOnce(1, true);
-			//cv::Point3d world_pt, windows_pt;
-			//cv::Vec3f pt = bunny_cloud.at<cv::Vec3f>(0, 0);
-			//world_pt = cv::Point3d(pt[0], pt[1], pt[2]);
-			//myWindow.convertToWindowCoordinates(world_pt, windows_pt);
-			//std::cout << world_pt << " " << windows_pt << std::endl;
-			Sleep(200);
 		}
 	}
 }
@@ -584,14 +520,14 @@ void vizTest() {
 	cv::Point3d cam_pos(0.0f, 0.0f, 5.0f), cam_focal_point(0.0f, 0.0f, 4.0f), cam_y_dir(0.0f, -1.0f, 0.0f);
 	cv::Affine3d cam_pose = cv::viz::makeCameraPose(cam_pos, cam_focal_point, cam_y_dir);
 	//使物体的坐标发生变化。坐标系本身没有变化
-	cv::Affine3f transform = cv::viz::makeTransformToGlobal(cv::Vec3f(-1.0f, 0.0f, 0.0f), cv::Vec3f(0.0f, -1.0f, 0.0f), cv::Vec3f(0.0f, 0.0f, 1.0f), cam_pos);
+	cv::Affine3f transform = cv::viz::makeTransformToGlobal(cv::Vec3f(-1.0f, 0.0f, 0.0f), cv::Vec3f(0.0f, -1.0f, 0.0f), cv::Vec3f(0.0f, 0.0f, -1.0f), cam_pos);
 
 	cv::Mat raw_cloud = cvcloud_load_base();
 	cv::Mat bunny_cloud = getSelectPtMat(raw_cloud);
-	std::cout << bunny_cloud.size() << std::endl;
+	/*std::cout << bunny_cloud.size() << std::endl;
 	cv::FileStorage fs("pt.yml", cv::FileStorage::WRITE);
 	fs << "ftmatrix" << bunny_cloud;
-	fs.release();
+	fs.release();*/
 
 	cv::viz::WCloud cloud_widget(bunny_cloud, cv::viz::Color::green());
 
@@ -607,16 +543,22 @@ void vizTest() {
 	}
 
 	myWindow.showWidget("bunny", cloud_widget, cloud_pose_global);
-	showRotate(myWindow);
+	if (!camera_pov) {
+		showRotate(bunny_cloud, myWindow, transform);
+	}
+	else {
+		showRotate(bunny_cloud, myWindow, cv::Affine3f());
+	}
+
 
 	myWindow.spin();
 }
 
-void doProject(cv::Mat ptMat) {
-	std::cout << ptMat << std::endl;
+cv::Mat doProject(cv::Mat ptMat) {
+//	std::cout << ptMat << std::endl;
 	std::vector<cv::Point> pts;
 	cv::Mat channelMat(3, ptMat.cols,  CV_32FC1);
-	std::cout << channelMat.size() << std::endl;
+//	std::cout << channelMat.size() << std::endl;
 	for (int i = 0; i < ptMat.cols; i++) {
 		cv::Vec3f temp = ptMat.at<cv::Vec3f>(0, i);
 		channelMat.at<float>(0, i) = temp[0];
@@ -628,8 +570,8 @@ void doProject(cv::Mat ptMat) {
 	cv::Mat projectMat(2, ptMat.cols, CV_32FC1);
 	for (int i = 0; i < projectMat.cols; i++) {
 		for (int j = 0; j < projectMat.rows; j++) {
-			std::cout << channelMat.at<float>(j, i) << " " << channelMat.at<float>(2, i) << "  " << channelMat.at<float>(j, i) / channelMat.at<float>(2, i) << std::endl;
-			projectMat.at<float>(j, i) = channelMat.at<float>(j, i)  / (2.0 - channelMat.at<float>(2, i));
+//			std::cout << channelMat.at<float>(j, i) << " " << channelMat.at<float>(2, i) << "  " << channelMat.at<float>(j, i) / channelMat.at<float>(2, i) << std::endl;
+			projectMat.at<float>(j, i) = channelMat.at<float>(j, i)  / (5.0 - channelMat.at<float>(2, i));
 		}
 	}
 
@@ -637,32 +579,32 @@ void doProject(cv::Mat ptMat) {
 	for (int row = 0; row < 3; row++) {
 		cv::Mat rowmat = channelMat.row(row);
 		cv::minMaxLoc(rowmat, &minValue, &maxValue);
-		std::cout << minValue << " " << maxValue << std::endl;
+//		std::cout << minValue << " " << maxValue << std::endl;
 		rowmat = (rowmat - minValue) / (maxValue - minValue);
 	}
 	
-	std::cout << "projectMat " << projectMat << std::endl;
+//	std::cout << "projectMat " << projectMat << std::endl;
 
 	for (int row = 0; row < 2; row++) {
 		cv::Mat rowmat = projectMat.row(row);
 		cv::minMaxLoc(rowmat, &minValue, &maxValue);
-		std::cout << minValue << " " << maxValue << std::endl;
+//		std::cout << minValue << " " << maxValue << std::endl;
 		rowmat = (rowmat - minValue) / (maxValue - minValue);
 	}
-	std::cout << "projectMat " << projectMat << std::endl;
+//	std::cout << "projectMat " << projectMat << std::endl;
 
 	cv::Mat showView(cv::Size(500, 500), CV_8UC3, cv::Scalar(0, 0, 0));
 	cv::Mat projectView(cv::Size(500, 500), CV_8UC3, cv::Scalar(0, 0, 0));
 	for (int i = 0; i < channelMat.cols; i++) {
-			cv::Point pt(channelMat.at<float>(0, i) * 500, (1.0 - channelMat.at<float>(1, i)) * 500);
-			cv::circle(showView, pt, 2, cv::Scalar(255, 0, 0), -1);
+			//cv::Point pt(channelMat.at<float>(0, i) * 500, (1.0 - channelMat.at<float>(1, i)) * 500);
+			//cv::circle(showView, pt, 2, cv::Scalar(255, 0, 0), -1);
 			cv::Point pt1(projectMat.at<float>(0, i) * 500, (1.0 - projectMat.at<float>(1, i)) * 500);
-			cv::circle(projectView, pt1, 2, cv::Scalar(255, 255, 255), -1);
+			cv::circle(showView, pt1, 2, cv::Scalar(255, 255, 255), -1);
 	}
-	cv::imshow("project", showView);
-	cv::imshow("project", projectView);
-	cv::waitKey();
-
+	//cv::imshow("show", showView);
+	//cv::imshow("project", projectView);
+	//cv::waitKey();
+	return showView;
 	//先分别对xyz做归一化
 }
 
@@ -674,11 +616,29 @@ void projectTest() {
 }
 
 
+void landmark_test() {
+	EsrShape esp("frontface.dat", "D:/data/74.yaml");
+	cv::Mat img = cv::imread("D:/data/2.jpg");
 
-int main() { //freopen("cv.txt", "w", stdout);
+	esp.detect(img);
+	//std::vector<cv::Point2f> pts = esp.getFilterPts();
+	//for (int i = 0; i < pts.size(); i++) {
+	//	cv::circle(img, pts[i], 3, cv::Scalar(0, 0, 255), -1);
+	//}
+	esp.draw(img);
+	cv::imshow("dst", img);
+	cv::waitKey();
+}
+
+
+
+int main() { 
+	//landmark_test();
+	//return 0;
+	//freopen("cv.txt", "w", stdout);
 	//projectTest();
-	//vizTest();
-	face_landmark();
+	vizTest();
+	//face_landmark();
 	//face_landmark1();
 }
 

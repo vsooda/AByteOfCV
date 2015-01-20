@@ -2,7 +2,7 @@
 #include <opencv2/core/core.hpp>
 #include "common.h"
 
-#define LANDMARK_NUM  68
+#define LANDMARK_NUM  74
 #define CASCADE_NUM 15
 #define TREE_PER_CASCADE 500
 #define LEAF_NUM 16 
@@ -12,11 +12,17 @@
 struct AffineTransform {
 	cv::Mat_<float> rotation;
 	cv::Mat_<float> b;
-	AffineTransform(cv::Mat_<float> rotation_, cv::Mat_<float> b_) {
+	float c;
+	AffineTransform(cv::Mat_<float> rotation_, cv::Mat_<float> b_, float c_) {
 		rotation_.copyTo(rotation);
 		b_.copyTo(b);
+		c = c_;
 	}
 	cv::Mat getRotation() {
+		return rotation * c;
+	}
+	
+	cv::Mat getRotation_unscale() {
 		return rotation;
 	}
 	cv::Mat getB() {
@@ -25,7 +31,7 @@ struct AffineTransform {
 
 	cv::Mat operator()(const cv::Mat& locateMat) {
 		cv::Mat ret;
-		ret = rotation * locateMat;
+		ret = c * rotation * locateMat;
 		for (int i = 0; i < locateMat.cols; i++) {
 			ret.at<float>(0, i) = ret.at<float>(0, i) + b.at<float>(0, 0);
 		}
@@ -314,15 +320,15 @@ namespace customCV
 				c = 1.0 / sigma_from * cv::trace(d * s)[0];
 			}
 			
-			r = c * r;
+			//r = c * r;
 			r = r.t();
-			cv::Mat t = mean_to - r * mean_from;
+			cv::Mat t = mean_to -  c * r * mean_from;
 
 			//std::cout << r << std::endl << std::endl;;
 
 			t.convertTo(t, CV_32F);
 			r.convertTo(r, CV_32F);
-			return AffineTransform(r, t);
+			return AffineTransform(r, t, c);
 		}
 
     // ------------------------------------------------------------------------------------
