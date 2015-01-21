@@ -33,6 +33,8 @@ public:
 		angleY_ = 0;
 		angleZ_ = 0;
 		setFrontfacePtmat();
+		initAxisIndex();
+		isSelectPtsError_ = true;
 		std::cout << "v3d init ok" << std::endl;
 	}
 
@@ -72,6 +74,13 @@ public:
 		delete [] index;
 		return selectPt;
 	}
+
+	void initAxisIndex() {
+		int yIndexs[] = { 7, 55, 59, 64, 62, 49, 39, 65, 29, 30, 32, 34};
+		yAxisIndexs_.assign(yIndexs, yIndexs + 12);
+		int xIndexs[] = { 18, 24, 29, 35, 43, 33, 65, 39, 64, 6, 7, 8 };
+		xAxisIndexs_.assign(xIndexs, xIndexs + 12);
+	}
 	
 	//ptMat: 3d coodate
 	//projectMat: 2d coodate 
@@ -110,39 +119,116 @@ public:
 
 	//attention!!! z y x turns
 	//angleZ_ is const
-	void searchBestAngle(const float &anglez, float & angley, float &anglex, const cv::Mat& detPtmat) {
+	void searchBestAngle(const float &anglez, float & anglex, float &angley, const cv::Mat& detPtmat) {
 		angleZ_ = anglez;
 		angleX_ = anglex;
 		angleY_ = angley;
 		detPtmat.copyTo(detMat_);
 		detPtmat.copyTo(detMatInverse_);
 		detMatInverse_.row(1) = 1.0 - detMatInverse_.row(1);
-		searchYaxiz();
+		//searchSeperate();
+		searchTogether();
 		angley = angleY_;
-		searchXaxiz();
 		anglex = angleX_;
+		update(angleX_, angleY_, angleZ_);
+	}
+
+	void searchSeperate() {
+		searchYaxis();
+		searchXaxis();
+	}
+
+	void searchTogether() {
+		float anglex = -0.5;
+		float angley = -0.5;
+		float minError = 10000000;
+		float delta = 0.03;
+		while (anglex < 0.5) {
+			angley = -0.5;
+			while (angley < 0.5) {
+				setCurrentPtmat(anglex, angley, angleZ_);
+				//float yerror = computeYError(ptmat2d_, detMatInverse_);
+				float allError = computeAllError(ptmat2d_, detMatInverse_);
+				if (allError <= minError) {
+					minError = allError;
+					angleX_ = anglex;
+					angleY_ = angley;
+					update();
+				}
+				angley = angley + delta;
+			}
+			anglex = anglex + delta;
+		}
+	}
+
+	float computeAllError(const cv::Mat& currentPtmat, const cv::Mat& detPtmat) {
+		if (!isSelectPtsError_) {
+			cv::Mat diffMat = currentPtmat - detPtmat;
+			diffMat = diffMat.mul(diffMat);
+			cv::Scalar sumError = cv::sum(diffMat);
+			return sumError.val[0];
+		}
+		else {
+			return computeXError(currentPtmat, detPtmat) + computeYError(currentPtmat, detPtmat);
+		}
 	}
 
 	//only count x error
 	float computeYError(const cv::Mat& currentPtmat, const cv::Mat& detPtmat) {
-		cv::Mat diffMat = currentPtmat.row(0) - detPtmat.row(0);
-		diffMat = diffMat.mul(diffMat);
-		cv::Scalar sumError = cv::sum(diffMat);
-		std::cout << diffMat.size() << " sumError: " << sumError << std::endl;
-		return sumError.val[0];
+		if (!isSelectPtsError_) {
+			cv::Mat diffMat = currentPtmat.row(0) - detPtmat.row(0);
+			diffMat = diffMat.mul(diffMat);
+			cv::Scalar sumError = cv::sum(diffMat);
+			//std::cout << diffMat.size() << " sumError: " << sumError << std::endl;
+			return sumError.val[0];
+		}
+		else {
+			cv::Mat diffMat = currentPtmat.row(0) - detPtmat.row(0);
+			float sumError = 0;
+			for (int i = 0; i < yAxisIndexs_.size(); i++) {
+				sumError += diffMat.at<float>(0, yAxisIndexs_[i]) * diffMat.at<float>(0, yAxisIndexs_[i]);
+			}
+			return sumError;
+		}
 	}
 
 	//only count y error 
 	//attention: for the y, must inverse the axise
 	float computeXError(const cv::Mat& currentPtmat, const cv::Mat& detPtmat) {
-		cv::Mat diffMat = currentPtmat.row(1) - detPtmat.row(1);
-		diffMat = diffMat.mul(diffMat);
-		cv::Scalar sumError = cv::sum(diffMat);
-		std::cout << diffMat.size() << " sumError: " << sumError << std::endl;
-		return sumError.val[0];
+		if (!isSelectPtsError_) {
+			cv::Mat diffMat = currentPtmat.row(1) - detPtmat.row(1);
+			diffMat = diffMat.mul(diffMat);
+			cv::Scalar sumError = cv::sum(diffMat);
+			//std::cout << diffMat.size() << " sumError: " << sumError << std::endl;
+			return sumError.val[0];
+		}
+		else {
+			cv::Mat diffMat = currentPtmat.row(1) - detPtmat.row(1);
+			float sumError = 0;
+			for (int i = 0; i < xAxisIndexs_.size(); i++) {
+				sumError += diffMat.at<float>(0, xAxisIndexs_[i]) * diffMat.at<float>(0, xAxisIndexs_[i]);
+			}
+			return sumError;
+		}
 	}
 
-	void searchYaxiz() {
+	void setYaxisIndex(std::vector<int> indexs) {
+		yAxisIndexs_.clear();
+		for (int i = 0; i < indexs.size(); i++) {
+			yAxisIndexs_.push_back(indexs[i]);
+		}
+	}
+
+	void setXaxisIndex(std::vector<int> indexs) {
+		xAxisIndexs_.clear();
+		for (int i = 0; i < indexs.size(); i++) {
+			xAxisIndexs_.push_back(indexs[i]);
+		}
+	}
+
+	
+
+	void searchYaxis() {
 		float angle = -0.5;
 		float minError = 10000000;
 		float delta = 0.03;
@@ -152,13 +238,13 @@ public:
 			if (yerror <= minError) {
 				minError = yerror;
 				angleY_ = angle;
-				update();
+				//update();
 			}
 			angle = angle + delta;
 		}
 	}
 
-	void searchXaxiz() {
+	void searchXaxis() {
 		float angle = -0.5;
 		float minError = 10000000;
 		float delta = 0.03;
@@ -168,7 +254,7 @@ public:
 			if (xerror <= minError) {
 				minError = xerror;
 				angleX_ = angle;
-				update();
+				//update();
 			}
 			angle = angle + delta;
 		}
@@ -213,7 +299,7 @@ public:
 
 	void update() {
 		cv::imshow("project", view2d_);
-		cv::waitKey(200);
+		//cv::waitKey(10);
 		objWindow_.setWidgetPose("bunny", pose_);
 		objWindow_.spinOnce(1, true);
 	}
@@ -297,5 +383,8 @@ private:
 	cv::Mat detMatInverse_;
 	cv::Mat frontfacePtmat_;
 	cv::Mat view2d_;
+	std::vector<int> yAxisIndexs_;
+	std::vector<int> xAxisIndexs_;
+	bool isSelectPtsError_;
 };
 #endif

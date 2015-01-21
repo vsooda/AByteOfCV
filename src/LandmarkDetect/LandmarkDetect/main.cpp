@@ -181,8 +181,8 @@ void face_landmark1()
 		deserialize("frontface.dat") >> detector;
 		dlib1::shape_predictor sp;
 		//deserialize("D:/data/shape_predictor_68_face_landmarks.dat") >> sp;
-		deserialize("sp_10000.dat") >> sp;
-		save_ft("D:/data/74.yaml", sp);
+		deserialize("D:/data/sp.dat") >> sp;
+		//save_ft("D:/data/74_5.yaml", sp);
 		//return;
 		//sp = load_ft<dlib1::shape_predictor>("D:/data/74.yaml");
 		//save_ft("D:/data/13.yaml", sp);
@@ -606,7 +606,8 @@ void landmark_test() {
 
 void poseEstimateTest() {
 	//EstimatePos ep("frontface.dat", "D:/data/74.yaml");
-	EstimatePos ep("frontface.dat", "D:/data/74.yaml", "D:/data/base.ply", "D:/data/pt.txt");
+	//EstimatePos ep("frontface.dat", "D:/data/74.yaml", "D:/data/base.ply", "D:/data/pt.txt");
+	EstimatePos ep("frontface.dat", "D:/data/sp.dat", "D:/data/base.ply", "D:/data/pt.txt");
 	std::vector<string> names;
 	string dir;
 	int cnt = readDir("D:/wkdir/helen_3/*.jpg", names, dir);
@@ -630,7 +631,7 @@ void view3dTest() {
 
 int main() { 
 	//view3dTest();
-	poseEstimateTest();
+	//poseEstimateTest();
 	//return 0;
 	//landmark_test();
 	//return 0;
@@ -638,6 +639,6 @@ int main() {
 	//projectTest();
 	//vizTest();
 	//face_landmark();
-	//face_landmark1();
+	face_landmark1();
 }
 
