@@ -10,17 +10,32 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <cmath>
 #include "esrShape.h"
+#include "view3d.h"
 
 class EstimatePos {
 public:
+	EstimatePos(const char* facemodel, const char* shapemodel, const char* plyname, const char* indexName, int landnum = 74) {
+		pesr_ = new EsrShape(facemodel, shapemodel, landnum);
+		pv3d_ = new View3D(plyname, indexName, landnum);
+		landnum_ = landnum;
+		init();
+	}
 	EstimatePos(const char* facemodel, const char* shapemodel, int landnum = 74) {
 		pesr_ = new EsrShape(facemodel, shapemodel, landnum);
 		landnum_ = landnum;
+		pv3d_ = NULL;
+		init();
 	}
+
+	void init();
 	~EstimatePos() {
 		delete pesr_;
+		if (pv3d_ != NULL) {
+			delete pv3d_;
+		}
 	}
 	void doEstimatePos(const cv::Mat &src);
+	void doEstimatePos3d(const cv::Mat& src);
 	void show2dProject(cv::Mat dstView, cv::Mat srcmat);
 
 	//change vector point  or mat point to the uniform format .
@@ -35,16 +50,37 @@ public:
 	cv::Mat ptmat2singleColsShape(cv::Mat& ptmat);
 	//double estimate2dRotateAngle(cv::Mat fromPtmat, cv::Mat toPtmat);
 	void showNormalizePtmat(cv::Mat &view, cv::Mat ptmat, cv::Scalar color = cv::Scalar(255, 255, 255));
+	int detect(const cv::Mat& src);
+	void visualize();
 	//friend class EsrShape;
 private:
 	float angleX_, angleY_, angleZ_;
 	cv::Mat image_;
 	EsrShape *pesr_;
 	int landnum_;
+	View3D *pv3d_;
+	cv::Mat initShape_;
+	cv::Mat initShapePtmat_;
+	cv::Mat detPtMat_;
+	cv::Mat tformDetPtmat_;
+	cv::Mat rotatePtmat_;
+	
 };
 
 void EstimatePos::show2dProject(cv::Mat dstView, cv::Mat srcmat) {
 
+}
+
+void EstimatePos::init() {
+	if (pv3d_ == NULL) {
+		initShape_ = pesr_->getInitShape();
+		initShapePtmat_ = singleColShape2ptmat(initShape_);
+	}
+	else {
+		initShapePtmat_ = pv3d_->getFrointfacePtmat();
+		initShapePtmat_.row(1) = 1.0 - initShapePtmat_.row(1);
+		initShape_ = ptmat2singleColsShape(initShapePtmat_);
+	}
 }
 
 void EstimatePos::showNormalizePtmat(cv::Mat &view, cv::Mat ptmat, cv::Scalar color) {
@@ -159,46 +195,55 @@ cv::Mat EstimatePos::image2tform(cv::Mat& ptmat) {
 	return tform_from_img(ptmat);
 }
 
-void EstimatePos::doEstimatePos(const cv::Mat& src) {
+void EstimatePos::doEstimatePos3d(const cv::Mat& src) {
+
+}
+
+
+int EstimatePos::detect(const cv::Mat& src) {
 	image_ = src.clone();
 	pesr_->detect(image_);
 	std::vector<cv::Point2f> pts = pesr_->getPts();
 	std::cout << pts.size() << std::endl;
 	if (pts.size() <= 0) {
+		return 0;
+	}
+	detPtMat_ = pts2Mat(pts);
+	tformDetPtmat_ = image2tform(detPtMat_);
+	return 1;
+}
+
+void EstimatePos::doEstimatePos(const cv::Mat& src) {
+	if (!detect(src)) {
 		return;
 	}
-
-	cv::Mat initShape = pesr_->getInitShape();
-	cv::Mat initShapePtmat = singleColShape2ptmat(initShape);
-
-	cv::Mat detPtMat = pts2Mat(pts);
-	cv::Mat tformDetPtmat = image2tform(detPtMat);
-
 	double angle;
-
-	std::cout << "initmat" << std::endl << initShapePtmat << std::endl;
-	std::cout << "detptmat" << std::endl << tformDetPtmat << std::endl;
-	/*cv::Mat debugView(cv::Size(500, 500), CV_32FC3, cv::Scalar(0, 0, 0));
-	showNormalizePtmat(debugView, initShapePtmat);
-	showNormalizePtmat(debugView, tformDetPtmat, cv::Scalar(255, 0, 255));*/
-
-	//cv::Mat rotatePtmat = estimate2dRotate(initShapePtmat, tformDetPtmat, &angle);
-	cv::Mat rotatePtmat = estimate2dRotate(initShape, ptmat2singleColsShape(tformDetPtmat), &angle);
-	std::cout << "rotatePtmat" << std::endl << rotatePtmat << std::endl;
-	std::cout << "angle: " << angle << std::endl;
 	
-	normalizeRows(rotatePtmat);
-	normalizeRows(detPtMat);
+	rotatePtmat_ = estimate2dRotate(initShape_, ptmat2singleColsShape(tformDetPtmat_), &angle);
+	angleZ_ = angle;
+	visualize();
+	
+}
+
+void EstimatePos::visualize() {
+	cv::Mat debugView(cv::Size(500, 500), CV_32FC3, cv::Scalar(0, 0, 0));
+	showNormalizePtmat(debugView, initShapePtmat_);
+	std::cout << "rotatePtmat" << std::endl << rotatePtmat_ << std::endl;
+	std::cout << "angle: " << angleZ_ << std::endl;
+	normalizeRows(rotatePtmat_);
+	normalizeRows(detPtMat_);
 
 	cv::Mat projectView(cv::Size(500, 500), CV_32FC3, cv::Scalar(0, 0, 0));
-	showNormalizePtmat(projectView, rotatePtmat);
-	showNormalizePtmat(projectView, detPtMat, cv::Scalar(255, 0, 255));
+	showNormalizePtmat(projectView, rotatePtmat_);
+	showNormalizePtmat(projectView, detPtMat_, cv::Scalar(255, 0, 255));
 
 	pesr_->draw(image_);
 	cv::imshow("es", image_);
 	cv::imshow("rotate", projectView);
-	//cv::imshow("debug", debugView);
+	cv::imshow("debugview", debugView);
 	cv::waitKey();
 }
+
+
 
 #endif

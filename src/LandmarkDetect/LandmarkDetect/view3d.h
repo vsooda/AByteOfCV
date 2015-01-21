@@ -32,6 +32,7 @@ public:
 		angleY_ = 0;
 		angleZ_ = 0;
 		setFrontfacePtmat();
+		std::cout << "v3d init ok" << std::endl;
 	}
 
 	~View3D() {

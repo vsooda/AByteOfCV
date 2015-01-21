@@ -605,7 +605,8 @@ void landmark_test() {
 }
 
 void poseEstimateTest() {
-	EstimatePos ep("frontface.dat", "D:/data/74.yaml");
+	//EstimatePos ep("frontface.dat", "D:/data/74.yaml");
+	EstimatePos ep("frontface.dat", "D:/data/74.yaml", "D:/data/base.ply", "D:/data/pt.txt");
 	std::vector<string> names;
 	string dir;
 	int cnt = readDir("D:/wkdir/helen_3/*.jpg", names, dir);
@@ -627,8 +628,8 @@ void view3dTest() {
 
 
 int main() { 
-	view3dTest();
-	//poseEstimateTest();
+	//view3dTest();
+	poseEstimateTest();
 	//return 0;
 	//landmark_test();
 	//return 0;
