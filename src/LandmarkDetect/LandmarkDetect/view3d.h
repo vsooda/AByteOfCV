@@ -23,7 +23,8 @@ public:
 		transform_ = cv::viz::makeTransformToGlobal(cv::Vec3f(-1.0f, 0.0f, 0.0f), cv::Vec3f(0.0f, -1.0f, 0.0f), cv::Vec3f(0.0f, 0.0f, -1.0f), camPosition_);
 		rawClound_ = readPlyData(plyname_);
 		selectClound_ = selectPlyData(rawClound_, selectIndex_);
-		cv::viz::WCloud cloud_widget(selectClound_, cv::viz::Color::green());
+		//cv::viz::WCloud cloud_widget(selectClound_, cv::viz::Color::green());
+		cv::viz::WCloud cloud_widget(rawClound_, cv::viz::Color::green());
 		cv::Affine3f cloud_pose = cv::Affine3f().translate(cv::Vec3f(0.0f, 0.0f, 0.0f));
 		cv::Affine3f cloud_pose_global = transform_ * cloud_pose;
 		objWindow_.showWidget("bunny", cloud_widget, cloud_pose_global);
@@ -75,7 +76,7 @@ public:
 	//ptMat: 3d coodate
 	//projectMat: 2d coodate 
 	//return: a view of the 2d projection
-	cv::Mat doProject(cv::Mat ptMat, cv::Mat& projectMat) {
+	void doProject(cv::Mat ptMat, cv::Mat& projectMat) {
 		std::vector<cv::Point> pts;
 		cv::Mat channelMat(3, ptMat.cols, CV_32FC1);
 		for (int i = 0; i < ptMat.cols; i++) {
@@ -103,64 +104,78 @@ public:
 			rowmat = (rowmat - minValue) / (maxValue - minValue);
 		}
 
-		cv::Mat showView(cv::Size(500, 500), CV_8UC3, cv::Scalar(0, 0, 0));
-		for (int i = 0; i < channelMat.cols; i++) {
-			cv::Point pt1(projectMat.at<float>(0, i) * 500, (1.0 - projectMat.at<float>(1, i)) * 500);
-			cv::circle(showView, pt1, 2, cv::Scalar(255, 255, 255), -1);
-		}
-
-		return showView;
+		
 	}
+
 
 	//attention!!! z y x turns
 	//angleZ_ is const
 	void searchBestAngle(const float &anglez, float & angley, float &anglex, const cv::Mat& detPtmat) {
 		angleZ_ = anglez;
-		searchYaxiz(detPtmat);
+		angleX_ = anglex;
+		angleY_ = angley;
+		detPtmat.copyTo(detMat_);
+		detPtmat.copyTo(detMatInverse_);
+		detMatInverse_.row(1) = 1.0 - detMatInverse_.row(1);
+		searchYaxiz();
 		angley = angleY_;
-		searchXaxiz(detPtmat);
+		searchXaxiz();
 		anglex = angleX_;
 	}
 
+	//only count x error
 	float computeYError(const cv::Mat& currentPtmat, const cv::Mat& detPtmat) {
-		return 0.1;
+		cv::Mat diffMat = currentPtmat.row(0) - detPtmat.row(0);
+		diffMat = diffMat.mul(diffMat);
+		cv::Scalar sumError = cv::sum(diffMat);
+		std::cout << diffMat.size() << " sumError: " << sumError << std::endl;
+		return sumError.val[0];
 	}
 
+	//only count y error 
+	//attention: for the y, must inverse the axise
 	float computeXError(const cv::Mat& currentPtmat, const cv::Mat& detPtmat) {
-		return 0.1;
+		cv::Mat diffMat = currentPtmat.row(1) - detPtmat.row(1);
+		diffMat = diffMat.mul(diffMat);
+		cv::Scalar sumError = cv::sum(diffMat);
+		std::cout << diffMat.size() << " sumError: " << sumError << std::endl;
+		return sumError.val[0];
 	}
 
-	void searchYaxiz(const cv::Mat& detPtmat) {
-		float angle = -1;
+	void searchYaxiz() {
+		float angle = -0.5;
 		float minError = 10000000;
-		float delta = 0.01;
-		while (angle < 1) {
+		float delta = 0.03;
+		while (angle < 0.5) {
 			setCurrentPtmat(angleX_, angle, angleZ_);
-			float yerror = computeYError(ptmat2d_, detPtmat);
+			float yerror = computeYError(ptmat2d_, detMatInverse_);
 			if (yerror <= minError) {
 				minError = yerror;
 				angleY_ = angle;
 				update();
 			}
+			angle = angle + delta;
 		}
 	}
 
-	void searchXaxiz(const cv::Mat& detPtmat) {
-		float angle = -1;
+	void searchXaxiz() {
+		float angle = -0.5;
 		float minError = 10000000;
-		float delta = 0.01;
+		float delta = 0.03;
 		while (angle < 1) {
 			setCurrentPtmat(angle, angleY_, angleZ_);
-			float xerror = computeXError(ptmat2d_, detPtmat);
+			float xerror = computeXError(ptmat2d_, detMatInverse_);
 			if (xerror <= minError) {
 				minError = xerror;
 				angleX_ = angle;
 				update();
 			}
+			angle = angle + delta;
 		}
 	}
 
 	void setCurrentPtmat(float anglex, float angley, float anglez) {
+		std::cout << "current pose" <<  anglez * 180.0 / CV_PI << " " << angley * 180.0 / CV_PI << " " << anglex * 180.0 / CV_PI << std::endl;
 		computePose(anglex, angley, anglez);
 		renderAndSet2dPtmat();
 	}
@@ -175,6 +190,16 @@ public:
 		pose_ = cv::Affine3f(rot_mat);
 	}
 
+	void renderProject() {
+		view2d_ = cv::Mat(cv::Size(500, 500), CV_8UC3, cv::Scalar(0, 0, 0));
+		for (int i = 0; i < ptmat2d_.cols; i++) {
+			cv::Point pt1(ptmat2d_.at<float>(0, i) * 500, (1.0 - ptmat2d_.at<float>(1, i)) * 500);
+			cv::circle(view2d_, pt1, 2, cv::Scalar(255, 255, 255), -1);
+			cv::Point pt(detMat_.at<float>(0, i) * 500, detMat_.at<float>(1, i) * 500);
+			cv::circle(view2d_, pt, 2, cv::Scalar(255, 0, 255), -1);
+		}
+	}
+
 	
 	void renderAndSet2dPtmat() {
 		cv::Mat mvpResult;
@@ -182,13 +207,21 @@ public:
 		for (int j = 0; j < landmark_; j++) {
 			mvpResult.at<cv::Vec3f>(0, j) = pose_ * selectClound_.at<cv::Vec3f>(0, j);
 		}
-		view2d_ = doProject(mvpResult, ptmat2d_);
+		doProject(mvpResult, ptmat2d_);
+		renderProject();
 	}
 
 	void update() {
 		cv::imshow("project", view2d_);
+		cv::waitKey(200);
 		objWindow_.setWidgetPose("bunny", pose_);
 		objWindow_.spinOnce(1, true);
+	}
+
+	void update(float anglex, float angley, float anglez) {
+		computePose(anglex, angley, anglez);
+		renderAndSet2dPtmat();
+		update();
 	}
 
 
@@ -220,8 +253,8 @@ public:
 	}
 
 	void setFrontfacePtmat() {
-		cv::Mat view = doProject(selectClound_, frontfacePtmat_);
-		cv::imshow("frontface", view);
+		doProject(selectClound_, frontfacePtmat_);
+		//cv::imshow("frontface", view);
 	}
 
 	cv::Mat getFrointfacePtmat() {
@@ -260,6 +293,8 @@ private:
 	const char* selectIndex_;
 	const int landmark_;
 	cv::Mat ptmat2d_;
+	cv::Mat detMat_;
+	cv::Mat detMatInverse_;
 	cv::Mat frontfacePtmat_;
 	cv::Mat view2d_;
 };

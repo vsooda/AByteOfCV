@@ -34,8 +34,8 @@ public:
 			delete pv3d_;
 		}
 	}
-	void doEstimatePos(const cv::Mat &src);
-	void doEstimatePos3d(const cv::Mat& src);
+	bool doEstimatePos(const cv::Mat &src);
+	bool doEstimatePos3d(const cv::Mat& src);
 	void show2dProject(cv::Mat dstView, cv::Mat srcmat);
 
 	//change vector point  or mat point to the uniform format .
@@ -48,9 +48,10 @@ public:
 	cv::Mat image2tform(cv::Mat& ptmat);
 	cv::Mat singleColShape2ptmat(cv::Mat oneColMat);
 	cv::Mat ptmat2singleColsShape(cv::Mat& ptmat);
+	void resetAngle();
 	//double estimate2dRotateAngle(cv::Mat fromPtmat, cv::Mat toPtmat);
 	void showNormalizePtmat(cv::Mat &view, cv::Mat ptmat, cv::Scalar color = cv::Scalar(255, 255, 255));
-	int detect(const cv::Mat& src);
+	bool detect(const cv::Mat& src);
 	void visualize();
 	//friend class EsrShape;
 private:
@@ -171,7 +172,7 @@ void EstimatePos::normalizeRows(cv::Mat& src, int rowIndex /* = -1 */) {
 cv::Mat EstimatePos::estimate2dRotate(cv::Mat& fromShape, cv::Mat& toShape, double * pangle) {
 	AffineTransform atf = customCV::impl::SimilarityTransform(fromShape, toShape);
 	if (pangle != NULL) {
-		*pangle = asin(atf.getRotation_unscale().at<float>(0, 1)) * 180.0 / CV_PI;
+		*pangle = asin(atf.getRotation_unscale().at<float>(0, 1));
 	}
 	cv::Mat tform = atf.getRotation();
 	std::cout << "tform: " << tform << std::endl;
@@ -195,43 +196,60 @@ cv::Mat EstimatePos::image2tform(cv::Mat& ptmat) {
 	return tform_from_img(ptmat);
 }
 
-void EstimatePos::doEstimatePos3d(const cv::Mat& src) {
+bool EstimatePos::doEstimatePos3d(const cv::Mat& src) {
+	resetAngle();
+	if (!doEstimatePos(src)) {
+		return false;
+	}
+	visualize();
+	pv3d_->searchBestAngle(angleZ_, angleX_, angleY_, detPtMat_);
+	std::cout << "estimate result: " << angleZ_ * 180.0 / CV_PI << " " << angleY_ * 180.0 / CV_PI << " " << angleX_ * 180.0 / CV_PI << std::endl;
+	return true;
+}
 
+void EstimatePos::resetAngle() {
+	angleX_ = 0;
+	angleY_ = 0;
+	angleZ_ = 0;
+
+	std::cout << "reset angle " << std::endl;
+	std::cout << angleZ_ * 180.0 / CV_PI << " " << angleY_ * 180.0 / CV_PI << " " << angleX_ * 180.0 / CV_PI << std::endl;
 }
 
 
-int EstimatePos::detect(const cv::Mat& src) {
+bool EstimatePos::detect(const cv::Mat& src) {
 	image_ = src.clone();
 	pesr_->detect(image_);
 	std::vector<cv::Point2f> pts = pesr_->getPts();
 	std::cout << pts.size() << std::endl;
 	if (pts.size() <= 0) {
-		return 0;
+		return false;
 	}
 	detPtMat_ = pts2Mat(pts);
 	tformDetPtmat_ = image2tform(detPtMat_);
-	return 1;
+	return true;
 }
 
-void EstimatePos::doEstimatePos(const cv::Mat& src) {
+bool EstimatePos::doEstimatePos(const cv::Mat& src) {
 	if (!detect(src)) {
-		return;
+		return false;
 	}
 	double angle;
 	
 	rotatePtmat_ = estimate2dRotate(initShape_, ptmat2singleColsShape(tformDetPtmat_), &angle);
 	angleZ_ = angle;
-	visualize();
-	
-}
-
-void EstimatePos::visualize() {
-	cv::Mat debugView(cv::Size(500, 500), CV_32FC3, cv::Scalar(0, 0, 0));
-	showNormalizePtmat(debugView, initShapePtmat_);
-	std::cout << "rotatePtmat" << std::endl << rotatePtmat_ << std::endl;
-	std::cout << "angle: " << angleZ_ << std::endl;
 	normalizeRows(rotatePtmat_);
 	normalizeRows(detPtMat_);
+	return true;
+}
+
+
+void EstimatePos::visualize() {
+	//std::cout << "rotatePtmat" << std::endl << rotatePtmat_ << std::endl;
+	std::cout << "angle: " << angleZ_ << std::endl;
+	cv::Mat debugView(cv::Size(500, 500), CV_32FC3, cv::Scalar(0, 0, 0));
+	showNormalizePtmat(debugView, initShapePtmat_);
+	showNormalizePtmat(debugView, detPtMat_, cv::Scalar(255, 0, 255));
 
 	cv::Mat projectView(cv::Size(500, 500), CV_32FC3, cv::Scalar(0, 0, 0));
 	showNormalizePtmat(projectView, rotatePtmat_);
@@ -240,8 +258,8 @@ void EstimatePos::visualize() {
 	pesr_->draw(image_);
 	cv::imshow("es", image_);
 	cv::imshow("rotate", projectView);
-	cv::imshow("debugview", debugView);
-	cv::waitKey();
+	//cv::imshow("debugview", debugView);
+	cv::waitKey(20);
 }
 
 

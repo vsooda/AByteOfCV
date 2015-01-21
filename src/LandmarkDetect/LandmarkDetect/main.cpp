@@ -615,7 +615,8 @@ void poseEstimateTest() {
 		cout << "processing image " << filename << endl;
 		cv::Mat src = cv::imread(filename.c_str());
 		cv::resize(src, src, cv::Size(500, 500));
-		ep.doEstimatePos(src);
+		ep.doEstimatePos3d(src);
+		cv::waitKey();
 	}
 }
 
