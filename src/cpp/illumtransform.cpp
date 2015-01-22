@@ -28,6 +28,7 @@ namespace customCV {
 		}
 
 		virtual cv::Mat apply(cv::Mat src, cv::Mat avg, cv::InputArray maskMat = cv::noArray(), bool makeup = false) {
+            std::cout << "median illum" << std::endl;
 			//如果没有mask，制造mask
 			cv::Mat mask = maskMat.getMat();
 			if (mask.empty()) {
@@ -209,7 +210,8 @@ namespace customCV {
 			
 			cv::Mat mask = params_.mask_;
 			
-			setEpsMat(params_.delta_, 0.1);
+			//setEpsMat(params_.delta_, 0.1);
+            salancyDelta_ = 0.1;
 
 			cv::Mat q1, q2, q3;
 			customCV::Epdfilter::Params params(params_.epsMat_, params_.radius_);
@@ -227,6 +229,7 @@ namespace customCV {
 			detail1 = I_illum - q1;
 			detail2 = p_illum - q2;
 
+			//cv::Mat illum = q1 + detail2 * 0.2 + detail1 * 0.8;
 			cv::Mat illum = q1 + detail2 * 0.2 + detail1 * 0.8;
 			illum.convertTo(illum, I_vector[2].type());
 			I_vector[0] = illum;
@@ -236,8 +239,11 @@ namespace customCV {
 			p_vector[1].convertTo(p_vector[1], CV_32F);
 			p_vector[2].convertTo(p_vector[2], CV_32F);
 			mask.convertTo(mask, CV_32F, 1 / 255.0);
-			I_vector[1] = I_vector[1].mul(1.0 - mask) + p_vector[1].mul(mask);
-			I_vector[2] = I_vector[2].mul(1.0 - mask) + p_vector[2].mul(mask);
+			//I_vector[1] = I_vector[1].mul(1.0 - mask) + p_vector[1].mul(mask);
+			//I_vector[2] = I_vector[2].mul(1.0 - mask) + p_vector[2].mul(mask);
+
+			I_vector[1] =  p_vector[1];
+			I_vector[2] =  p_vector[2];
 
 			I_vector[1].convertTo(I_vector[1], CV_8U);
 			I_vector[2].convertTo(I_vector[2], CV_8U);

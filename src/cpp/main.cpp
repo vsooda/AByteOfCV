@@ -273,12 +273,13 @@ cv::Mat getMask(cv::Mat img, vector<int> det) {
 
 
 void tpsWarpIllum() {
+    srand (time(NULL));
     int num = 50;
     int filenum = 600;
     //vector<int> det(68 * 2);
     vector<vector<int> > dets;
     vector<cv::Mat> images;
-    FILE* fin = fopen("/home/sooda/data/face1/result/1.txt", "r");
+    FILE* fin = fopen("/home/sooda/data/face1/result/11.txt", "r");
     char filename[80];
     for(int i = 0; i < filenum; i++) {
         int cnt = fscanf(fin, "%s%*c", filename);
@@ -287,10 +288,15 @@ void tpsWarpIllum() {
         }
 
         std::cout << i << " "  << filename << std::endl;
+        cv::Mat img = cv::imread(filename);
         int tempx, tempy;
         vector<int> det(68*2);
         for(int j = 0; j < 68; j++) {
-            fscanf(fin, "(%d, %d)%*c", &tempx, &tempy);
+            //fscanf(fin, "(%d, %d)%*c", &tempx, &tempy);
+            fscanf(fin, "%d %d%*c", &tempx, &tempy);
+            //cv::circle(img, cv::Point(tempx, tempy), 2, cv::Scalar(255, 0, 255));
+            tempx = tempx * 2;
+            tempy = tempy * 2;
             if(tempx < 0) 
                 tempx = 1;
             if(tempy < 0) 
@@ -308,67 +314,28 @@ void tpsWarpIllum() {
         }
         dets.push_back(det);
         //std::cout << i << " " << filename << std::endl;
-        cv::Mat img = cv::imread(filename);
         images.push_back(img);
         //drawCounter(img, det);
         cv::Mat pointSet;
-        //pointSet = getCoutourPoint(det);
-        //cv::Rect rect = boundingRect(pointSet);
-        //cv::rectangle(img, rect, cv::Scalar(0, 0, 255));
-        
-        //cv::Mat mask = cv::Mat::zeros(img.size(), CV_8U);
-        //pointSet.convertTo(pointSet, CV_32SC2);
-        //drawContours(mask, pointSet, 1, Scalar(255), CV_FILLED);
-        //imshow("mask", mask);
-        //
-    
-
-//       cv::Mat mask = getMask(img, det);
-//       imshow("mask", mask);
-//       cv::Mat sal;
-//	   img.convertTo(img, CV_32FC3, 1.0 / 255.0);
-//	   cv::Ptr<customCV::Salancy> salancyMethod = customCV::Salancy::create(0);
-//	   sal= salancyMethod->apply(img, mask, mask);
-//	   sal.convertTo(sal, CV_8UC1, 255);
-//       imshow("sal", sal);
-//       imwrite("stdsal.jpg", sal);
-//
-
-        //cv::Rect rect = boundingRect(det);
-        //for(int i = 0; i < 68; i++) {
-        //    cv::circle(img, cv::Point(det[i*2], det[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
-        //}
-//        imshow("img", img);
- //       waitKey();
-        //cv::imshow("result", img);
-        //cv::waitKey(10);
     }
 
- //       vector<int> det;
- //       det = dets[i];
- //       for(int j = 0;j < 68; j++) {
- //           std::cout << det[2*j] << " " << det[j+1] << " ";
- //       }
- //       std::cout << std::endl;
- //   }
     //10 transform to 16
     for(int i = 0; i < filenum; i++) {
         
         int matchSize = 68;
         cv::Mat transformingImage, result;
-        int transIndex = 454;
+        int transIndex = 501;
+        //int transIndex = rand() % filenum + 1;
         //int transIndex = 10;
-        int targetIndex = i;
+        //int targetIndex = i;
+        int targetIndex = rand() % filenum + 1; 
+        std::cout << "trans: " << transIndex << " target: " << targetIndex << std::endl;
         images[transIndex].copyTo(transformingImage);
         images[targetIndex].copyTo(result);
         cv::Mat shape1(matchSize, 2, CV_32F);
         cv::Mat shape2(matchSize, 2, CV_32F);
         vector<int> det1 = dets[transIndex];
         vector<int> det2 = dets[targetIndex];
-      //  for(int i = 0; i < 68; i++) {
-      //      cv::circle(transformingImage, cv::Point(det1[i*2], det1[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
-      //      cv::circle(result, cv::Point(det2[i*2], det2[i*2+1]), 3, cv::Scalar(255, 0, 0)); 
-      //  }
         imshow("src", transformingImage);
         imshow("target", result);
         for(int i = 0; i < matchSize; i++) {
@@ -377,30 +344,152 @@ void tpsWarpIllum() {
             shape2.at<float>(i, 0) = det2[2 * i];
             shape2.at<float>(i, 1) = det2[2*i + 1];
         }
-        //std::cout << det1.size() << " " << det2.size() << std::endl;
-     //   FILE* fout = fopen("map.txt", "w");
-     //   for(int i = 0; i < matchSize * 2; i++) {
-     //       fprintf(fout, "%d ", det1[i]); 
-     //   }
-     //   fprintf(fout, "\n");
-     //   for(int i = 0; i < matchSize * 2; i++) {
-     //       fprintf(fout, "%d ", det2[i]); 
-     //   }
-     //   for(int i = 0; i < matchSize; i++) {
-     //       std::cout << shape1.at<float>(i, 0)  << std::endl;
-     //   }
         Ptr<cv::ThinPlateSplineShapeTransformer> tps = createThinPlateSplineShapeTransformer();
-        //tps->estimationTransformation1(shape1, shape2);
         tps->estimationTransformation1(shape2, shape1);
         tps->warpImage(transformingImage, result); 
-      //  for(int i = 0; i < 68; i++) {
-      //      cv::circle(result, cv::Point(det2[i*2], det2[i*2+1]), 3, cv::Scalar(255, 255, 0)); 
-      //  }
+        imshow("warpResult", result);
+        //真真
+        cv::Mat mask2 = getMask(result, det2);
+        //imshow("mask2", mask2);
+        cv::Mat extra = imread("sal.jpg", 0);
+        //imshow("img", images[targetIndex]);
+        customCV::IllumTransform::Params params(30, 0.2, extra, mask2);
+       // cv::Ptr<customCV::IllumTransform> illumMethod = customCV::IllumTransform::create(1, params);
+        //cv::Ptr<customCV::IllumTransform> illumMethod = customCV::IllumTransform::create();
+        customCV::Makeup::Params makeupParams(params);
+		cv::Ptr<customCV::Makeup> illumMethod = customCV::Makeup::create(customCV::Makeup::MAKEUP_ILLUM_TRANSFORM, makeupParams);
+        cv::Mat dst = illumMethod->apply(images[targetIndex], result);
+        //imshow("dst", dst);
+        //for(int i = 0; i < mask2.cols; i++) {
+        //    for(int j = 0; j < mask2.rows; j++) {
+        //        if(mask2.at<uchar>(j, i) == 0){
+        //            dst.at<cv::Vec3b>(j, i)[0] = 0;
+        //            dst.at<cv::Vec3b>(j, i)[1] = 0;
+        //            dst.at<cv::Vec3b>(j, i)[2] = 0;
+        //        }
+        //    }
+        //}
+        imshow("dst", dst);
+        cv::waitKey();
+    }
+}
+
+void tps_test() {
+    int matchSize = 68;
+    cv::Mat src, dst, result;
+    //src = imread("ref2.png");   
+    src = imread("ref4.png");   
+    dst = imread("q4.jpg");
+    result = src.clone();
+
+    FILE *fin = fopen("ref4.txt", "r");
+
+    cv::Mat shape1(matchSize, 2, CV_32F);
+    cv::Mat shape2(matchSize, 2, CV_32F);
+    for(int i = 0; i < matchSize; i++) {
+        float x, y;
+        fscanf(fin, "%f %f ", &x, &y); 
+        cout << i << " " << x << " " << y << endl;
+        cv::circle(src, cv::Point(x, y), 1, cv::Scalar(255, 0, 255));
+        shape1.at<float>(i, 0) = x;
+        shape1.at<float>(i, 1) = y;
+    }
+    fclose(fin);
+
+    fin = fopen("q4.txt", "r");
+
+    for(int i = 0; i < matchSize; i++) {
+        float x, y;
+        fscanf(fin, "%f %f ", &x, &y); 
+        cv::circle(dst, cv::Point(x, y), 1, cv::Scalar(255, 0, 255));
+        cout << i << " " << x << " " << y << endl;
+        shape2.at<float>(i, 0) = x;
+        shape2.at<float>(i, 1) = y;
+    }
+
+    Ptr<cv::ThinPlateSplineShapeTransformer> tps = createThinPlateSplineShapeTransformer();
+    tps->estimationTransformation1(shape2, shape1);
+    tps->warpImage(result, result);
+    cv::Mat depth = cv::imread("ref4.pgm", 0);
+    tps->warpImage(depth, depth);
+    imwrite("ref4_warp.png", result);
+    imwrite("ref4_warp.pgm", depth);
+    imshow("src", src);
+    imshow("dst", dst);
+
+    imshow("depth", depth);
+    imshow("warpResult", result);
+    cv::waitKey();
+    //真真
+    //cv::Mat mask2 = getMask(result, det2);
+}
+
+void tpsWarpIllum1() {
+    int num = 50;
+    int filenum = 60;
+    //vector<int> det(68 * 2);
+    vector<vector<int> > dets;
+    vector<cv::Mat> images;
+    FILE* fin = fopen("/home/sooda/data/self/1.txt", "r");
+    string basename = "/home/sooda/data/self/train/";
+    int landmarknum = 68;
+    char filename[80];
+    for(int i = 0; i < filenum; i++) {
+        int cnt = fscanf(fin, "%s%*c", filename);
+        if(cnt <= 0) {
+            break; 
+        }
+        string fullname = basename + filename;
+        cv::Mat img = cv::imread(fullname.c_str());
+        int tempx, tempy, tempw, temph;
+        fscanf(fin, "%d %d %d %d%*c", &tempx, &tempy, &tempw, &temph);
+        vector<cv::Point> landmark;
+        vector<int> det(68*2);
+        for(int j = 0; j < landmarknum; j++) { 
+            int x, y;
+            fscanf(fin, "%d %d%*c", &x, &y);
+            det[j * 2] = x;
+            det[j*2 + 1] = y;
+            cv::circle(img, cv::Point(x, y), 2, cv::Scalar(255, 0, 255));
+        }
+
+        std::cout << i << " "  << fullname << std::endl;
+        dets.push_back(det);
+        images.push_back(img);
+        cv::Mat pointSet;
+    }
+
+    //10 transform to 16
+    for(int i = 5; i < filenum; i++) {
+        
+        int matchSize = 68;
+        cv::Mat transformingImage, result;
+        int transIndex = 45;
+        //int transIndex = 10;
+        int targetIndex = i;
+        images[transIndex].copyTo(transformingImage);
+        images[targetIndex].copyTo(result);
+        cv::Mat shape1(matchSize, 2, CV_32F);
+        cv::Mat shape2(matchSize, 2, CV_32F);
+        vector<int> det1 = dets[transIndex];
+        vector<int> det2 = dets[targetIndex];
+        imshow("src", transformingImage);
+        imshow("target", result);
+        waitKey();
+        for(int i = 0; i < matchSize; i++) {
+            shape1.at<float>(i, 0) = det1[2 * i];
+            shape1.at<float>(i, 1) = det1[2*i + 1];
+            shape2.at<float>(i, 0) = det2[2 * i];
+            shape2.at<float>(i, 1) = det2[2*i + 1];
+        }
+        Ptr<cv::ThinPlateSplineShapeTransformer> tps = createThinPlateSplineShapeTransformer();
+        tps->estimationTransformation1(shape2, shape1);
+        tps->warpImage(transformingImage, result); 
         imshow("warpResult", result);
         //真真
         cv::Mat mask2 = getMask(result, det2);
         imshow("mask2", mask2);
-        cv::Mat extra = imread("sal.jpg", 0);
+        //cv::Mat extra = imread("sal.jpg", 0);
         imshow("img", images[targetIndex]);
         //customCV::IllumTransform::Params params(30, 0.2, extra, mask2);
         //cv::Ptr<customCV::IllumTransform> illumMethod = customCV::IllumTransform::create(1, params);
@@ -417,20 +506,29 @@ void tpsWarpIllum() {
             }
         }
         imshow("dst", dst);
-        
-       // cv::Mat mask = getMask(result, det1);
-       // imshow("mask", mask);
-       // cv::Mat sal;
-	   // result.convertTo(result, CV_32FC3, 1.0 / 255.0);
-	   // cv::Ptr<customCV::Salancy> salancyMethod = customCV::Salancy::create(0);
-	   // sal= salancyMethod->apply(result, mask, mask);
-	   // sal.convertTo(sal, CV_8UC1, 255);
-       // imshow("sal", sal);
-       // imwrite("stdsal.jpg", sal);
         cv::waitKey();
-       // break;
     }
+}
 
+void showPnp() {
+    int landmarknum = 7;
+    string jpgname = "/home/sooda/study/HeadPosePnP/Angelina_Jolie/Angelina_Jolie_0001.jpg";
+    FILE* fin = fopen("/home/sooda/study/HeadPosePnP/Angelina_Jolie/Angelina_Jolie_0001.txt", "r");
+    cv::Mat img = cv::imread(jpgname.c_str());
+    if(fin == NULL ) {
+        std::cout << "open faild" << std::endl;
+        return ; 
+    }
+    char filename[80];
+    for(int i = 0; i < landmarknum; i++) {
+        int x, y;
+        fscanf(fin, "%d %d", &x, &y);
+        char msg[20];
+        sprintf(msg, "%d", i);
+        putText(img, msg, cv::Point(x, y), CV_FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0, 0, 255)); 
+    }
+    cv::imshow("img", img);
+    cv::waitKey();
 }
 
 void showHelenDatabase() {
@@ -529,10 +627,15 @@ void showSelfDatabase() {
 
 
 int main() {
+    showPnp();
+    return 0;
+    tps_test();
+    return 0;
    // showSelfDatabase();
    // showLfpwDatabase();
    // showHelenDatabase();
    tpsWarpIllum();
+   //tpsWarpIllum1();
 	//guideIllumTestBatch();
 	//return 0;
 //	illumTransform_test();
