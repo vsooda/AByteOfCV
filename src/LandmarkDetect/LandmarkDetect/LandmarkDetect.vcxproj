@@ -47,7 +47,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>E:\opencv\build\include;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\opencv\build\x86\vc12\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>E:\opencv\vtkbuild\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -85,6 +85,9 @@
     <ClInclude Include="dlib\geometry\point_transforms.h" />
     <ClInclude Include="dlib\image_processing\shape_predictor.h" />
     <ClInclude Include="dlib\image_processing\shape_predictor1.h" />
+    <ClInclude Include="esrShape.h" />
+    <ClInclude Include="estimatePos.h" />
+    <ClInclude Include="view3d.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
