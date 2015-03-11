@@ -53,6 +53,7 @@ public:
 	void showNormalizePtmat(cv::Mat &view, cv::Mat ptmat, cv::Scalar color = cv::Scalar(255, 255, 255));
 	bool detect(const cv::Mat& src);
 	void visualize();
+	float getAngleZ();
 	//friend class EsrShape;
 private:
 	float angleX_, angleY_, angleZ_;
@@ -82,6 +83,10 @@ void EstimatePos::init() {
 		initShapePtmat_.row(1) = 1.0 - initShapePtmat_.row(1);
 		initShape_ = ptmat2singleColsShape(initShapePtmat_);
 	}
+}
+
+float EstimatePos::getAngleZ() {
+	return angleZ_;
 }
 
 void EstimatePos::showNormalizePtmat(cv::Mat &view, cv::Mat ptmat, cv::Scalar color) {
@@ -240,6 +245,8 @@ bool EstimatePos::doEstimatePos(const cv::Mat& src) {
 	angleZ_ = angle;
 	normalizeRows(rotatePtmat_);
 	normalizeRows(detPtMat_);
+	std::cout << angleZ_ * 180.0 / CV_PI << std::endl;
+//	cv::imshow("src", src);
 	return true;
 }
 
@@ -257,7 +264,7 @@ void EstimatePos::visualize() {
 
 	pesr_->draw(image_);
 	cv::imshow("es", image_);
-	cv::imshow("rotate", projectView);
+	//cv::imshow("rotate", projectView);
 	//cv::imshow("debugview", debugView);
 	cv::waitKey(20);
 }

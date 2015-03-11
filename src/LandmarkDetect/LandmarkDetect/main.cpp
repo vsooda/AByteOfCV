@@ -12,6 +12,7 @@
 #include "esrShape.h"
 #include "estimatePos.h"
 #include "view3d.h"
+#include "doCheck.h"
 
 const int landmark_num = 74;
 
@@ -224,7 +225,7 @@ void face_landmark1()
 			int scale = 1;
 			for (int j = 0; j < shapes.size(); j++) {
 				full_object_detection res = shapes[j];
-				rectangle rect = res.get_rect();
+				dlib::rectangle rect = res.get_rect();
 				cv::rectangle(src, cv::Point(rect.left() / scale, rect.top() / scale), cv::Point(rect.right() / scale, rect.bottom() / scale), cv::Scalar(255, 0, 0));
 				for (int i = 0; i < landmark_num; i++) {
 					point pt = res.part(i);
@@ -617,6 +618,8 @@ void poseEstimateTest() {
 		cv::Mat src = cv::imread(filename.c_str());
 		cv::resize(src, src, cv::Size(500, 500));
 		ep.doEstimatePos3d(src);
+		//ep.doEstimatePos(src);
+		
 		cv::waitKey();
 	}
 }
@@ -627,10 +630,75 @@ void view3dTest() {
 	//v3d.test();
 }
 
-
+void crop(cv::Rect rect, cv::Mat src, int index) {
+	rect.x = rect.x - rect.width / 4;
+	rect.y = rect.y - rect.height / 4;
+	rect.width = rect.width * 3 / 2;
+	rect.height = rect.height * 3 / 2;
+	if (rect.x < 0) {
+		rect.x = 0;
+	}
+	if (rect.y < 0) {
+		rect.y = 0;
+	}
+	if (rect.width + rect.x > src.cols) {
+		rect.width = src.cols - rect.x;
+	}
+	if (rect.height + rect.y > src.rows) {
+		rect.height = src.rows - rect.y;
+	}
+	cv::Mat faceMat(src, rect);
+	char roiname[80];
+	sprintf(roiname, "roi_%02d.jpg", index);
+	imwrite(roiname, faceMat);
+}
 
 int main() { 
 	//view3dTest();
+	poseEstimateTest();
+	return 0;
+	//EsrShape es("frontface.dat", "D:/data/sp.dat");
+	//EsrShape es("frontface.dat", "D:/data/sp_10000.dat");
+	EsrShape es("frontface.dat", "D:/data/shape_predictor_68_face_landmarks.dat");
+	std::vector<string> names;
+	string dir;
+	//int cnt = readDir("D:/data/*.jpg", names, dir);
+	int cnt = readDir("D:/code/SFMedu2/crop/*.jpg", names, dir);
+	for (int i = 0; i < cnt; i++) {
+		string filename = dir + names[i];
+		cout << "processing image " << filename << endl;
+		cv::Mat src = cv::imread(filename);
+		es.detect(src);
+		//std::vector<cv::Point2f> pts = es.getFilterPts();
+		std::vector<cv::Point2f> pts = es.getPts();         
+		cv::Mat dst = src.clone();
+		for (int i = 0; i < pts.size(); i++) {
+			cv::circle(dst, pts[i], 2, cv::Scalar(255, 0, 255), -1);
+		}  
+		string ptsname = filename;
+		std::size_t pos = ptsname.find("jpg");
+		ptsname.replace(pos, 3, "pts");
+		FILE *fout = fopen(ptsname.c_str(), "w");
+		float center_x = src.cols / 2;
+		float center_y = src.rows / 2;
+		for (int j = 0; j < pts.size(); j++) {
+			//fprintf(fout, "%.2f %.2f\n", center_x - pts[i].x, center_y - pts[i].y);
+			fprintf(fout, "%.2f %.2f\n",  pts[j].x,  pts[j].y);
+		}
+		//fprintf(fout, "\n");
+		fclose(fout);
+		
+		//doCheck_mouth(src, pts, 48, 54, 52, 57);
+		cv::Mat dst2 = src.clone();
+		/*for (int i = 0; i < pts.size(); i++) {
+			cv::circle(dst, pts[i], 2, cv::Scalar(255, 255, 255), -1);
+			}*/
+		//string savename = dir + "result/" + names[i];
+		//cv::imwrite(savename.c_str(), dst);
+		cv::imshow("dst", dst);
+		cv::waitKey();
+
+	}
 	//poseEstimateTest();
 	//return 0;
 	//landmark_test();
@@ -639,6 +707,7 @@ int main() {
 	//projectTest();
 	//vizTest();
 	//face_landmark();
-	face_landmark1();
+	//face_landmark1();
+
 }
 

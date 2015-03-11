@@ -34,7 +34,7 @@ public:
 		angleZ_ = 0;
 		setFrontfacePtmat();
 		initAxisIndex();
-		isSelectPtsError_ = true;
+		isSelectPtsError_ = false;
 		std::cout << "v3d init ok" << std::endl;
 	}
 
@@ -80,6 +80,9 @@ public:
 		yAxisIndexs_.assign(yIndexs, yIndexs + 12);
 		int xIndexs[] = { 18, 24, 29, 35, 43, 33, 65, 39, 64, 6, 7, 8 };
 		xAxisIndexs_.assign(xIndexs, xIndexs + 12);
+		/*int indexs[] = {64, 39, 29, 35, 43, 33};
+		yAxisIndexs_.assign(indexs, indexs + 6);
+		xAxisIndexs_.assign(indexs, indexs + 6);*/
 	}
 	
 	//ptMat: 3d coodate
@@ -126,8 +129,8 @@ public:
 		detPtmat.copyTo(detMat_);
 		detPtmat.copyTo(detMatInverse_);
 		detMatInverse_.row(1) = 1.0 - detMatInverse_.row(1);
-		//searchSeperate();
-		searchTogether();
+		searchSeperate();
+		//searchTogether();
 		angley = angleY_;
 		anglex = angleX_;
 		update(angleX_, angleY_, angleZ_);
@@ -231,7 +234,7 @@ public:
 	void searchYaxis() {
 		float angle = -0.5;
 		float minError = 10000000;
-		float delta = 0.03;
+		float delta = 0.01;
 		while (angle < 0.5) {
 			setCurrentPtmat(angleX_, angle, angleZ_);
 			float yerror = computeYError(ptmat2d_, detMatInverse_);
@@ -247,8 +250,8 @@ public:
 	void searchXaxis() {
 		float angle = -0.5;
 		float minError = 10000000;
-		float delta = 0.03;
-		while (angle < 1) {
+		float delta = 0.01;
+		while (angle < 0.5) {
 			setCurrentPtmat(angle, angleY_, angleZ_);
 			float xerror = computeXError(ptmat2d_, detMatInverse_);
 			if (xerror <= minError) {
@@ -261,7 +264,7 @@ public:
 	}
 
 	void setCurrentPtmat(float anglex, float angley, float anglez) {
-		std::cout << "current pose" <<  anglez * 180.0 / CV_PI << " " << angley * 180.0 / CV_PI << " " << anglex * 180.0 / CV_PI << std::endl;
+		//std::cout << "current pose" <<  anglez * 180.0 / CV_PI << " " << angley * 180.0 / CV_PI << " " << anglex * 180.0 / CV_PI << std::endl;
 		computePose(anglex, angley, anglez);
 		renderAndSet2dPtmat();
 	}

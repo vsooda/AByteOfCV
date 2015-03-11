@@ -81,15 +81,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AffineTransform.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="dlib\geometry\point_transforms.h" />
     <ClInclude Include="dlib\image_processing\shape_predictor.h" />
     <ClInclude Include="dlib\image_processing\shape_predictor1.h" />
+    <ClInclude Include="doCheck.h" />
     <ClInclude Include="esrShape.h" />
     <ClInclude Include="estimatePos.h" />
     <ClInclude Include="view3d.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="doCheck.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -8,6 +8,7 @@
 #include <time.h>
 #include "dlib/opencv.h"
 #include "common.h"
+#include "AffineTransform.h"
 
 typedef dlib::object_detector<dlib::scan_fhog_pyramid<dlib::pyramid_down<6> > > frontal_face_detector;
 
@@ -27,6 +28,7 @@ private:
 	dlib::shape_predictor _dlib_sp;
 	cv::Rect _rect;
 	std::vector<cv::Point2f> _pts;
+	cv::Mat _initShape;
 	int _landnum;
 	int _dlibtype;
 };
@@ -113,7 +115,7 @@ std::vector<cv::Point2f> EsrShape::getFilterPts() {
 				float y = (_pts[28].y + _pts[30].y) / 2;
 				pts.push_back(cv::Point2f(x, y));
 			}
-			else if (i < 35) {
+			else if (i <= 35) {
 				pts.push_back(_pts[i - 1]);
 			}
 			else if (i == 36) {
@@ -141,6 +143,7 @@ cv::Rect EsrShape::getRect() {
 }
 
 cv::Mat EsrShape::getInitShape() {
+	CV_Assert(_dlibtype == 1);
 	return _sp.getInitShape();
 }
 
