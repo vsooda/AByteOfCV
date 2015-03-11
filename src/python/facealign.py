@@ -120,8 +120,8 @@ def readFileNames():
 
 if __name__ == "__main__":
   #[images, indexes]=readFileNames()
-    basepath = '/home/sooda/data/face1/'
-    images = glob.glob(basepath + '*.jpg')
+    basepath = '/home/sooda/data/face2/'
+    images = glob.glob(basepath + '*.png')
     cv2.namedWindow('det',  cv2.WINDOW_AUTOSIZE)
     output_path = basepath + "result/"
     print output_path
@@ -180,4 +180,4 @@ if __name__ == "__main__":
             print  left_position
             print  right_position
             imgg = Image.open(img)
-            CropFace(imgg, left_position, right_position, offset_pct=(0.3,0.3), dest_sz=(250,300)).save(output_name)
+            CropFace(imgg, left_position, right_position, offset_pct=(0.375,0.5), dest_sz=(200,250)).save(output_name)
