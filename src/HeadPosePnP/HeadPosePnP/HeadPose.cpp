@@ -539,7 +539,8 @@ void test(int argc, char** argv) {
 	char filename[] = "D:/data/face/img_1227.jpg";
 //	char filename[] = "Angelina_Jolie/Angelina_Jolie_0001.jpg";
 	//int cnt = readDir("D:/data/face/*.jpg", names, dir);
-	int cnt = readDir("Angelina_Jolie/*.jpg", names, dir);
+	int cnt = readDir("D:/data/helen_3/*.jpg", names, dir);
+	//int cnt = readDir("Angelina_Jolie/*.jpg", names, dir);
 
 	//detectNext(esp, filename);
 	detectNext();

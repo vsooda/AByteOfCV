@@ -6,3 +6,7 @@ tags
 *.jpg
 *.png
 *.txt
+Debug
+Release
+HeadPosePnP
+pca

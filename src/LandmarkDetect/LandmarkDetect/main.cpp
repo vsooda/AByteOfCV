@@ -14,7 +14,7 @@
 #include "view3d.h"
 #include "doCheck.h"
 
-const int landmark_num = 74;
+const int landmarknum = 74;
 
 using namespace dlib;
 using namespace std;
@@ -592,16 +592,26 @@ void projectTest() {
 
 
 void landmark_test() {
-	EsrShape esp("frontface.dat", "D:/data/74.yaml");
-	cv::Mat img = cv::imread("D:/data/2.jpg");
+	//EsrShape esp("frontface.dat", "D:/data/chin.dat");
+	//EsrShape esp("frontface.dat", "D:/data/sp_4_10_2.dat");
+	//EsrShape esp("frontface.dat", "D:/data/sp_4_400_7_5_05.dat");
+	EsrShape esp("frontface.dat", "D:/data/sp_4_300_7_5_05.dat");
+	//EsrShape esp("frontface.dat", "D:/data/sp_pca_8.dat");
 
-	esp.detect(img);
-	//std::vector<cv::Point2f> pts = esp.getFilterPts();
-	//for (int i = 0; i < pts.size(); i++) {
-	//	cv::circle(img, pts[i], 3, cv::Scalar(0, 0, 255), -1);
-	//}
-	esp.draw(img);
-	cv::imshow("dst", img);
+	std::cout << sizeof(unsigned short) << " " << sizeof(unsigned long) << std::endl;
+	std::vector<string> names;
+	string dir;
+	//int cnt = readDir("D:/data/*.jpg", names, dir);
+	int cnt = readDir("D:/photos_bak/*.jpg", names, dir);
+	//int cnt = readDir("D:/data/lfpw/trainset/*.png", names, dir);
+	for (int i = 0; i < cnt; i++) {
+		string filename = dir + names[i];
+		cv::Mat img = cv::imread(filename.c_str());
+		esp.detect(img);
+		esp.draw(img);
+		cv::imshow("dst", img);
+		cv::waitKey();
+	}
 	cv::waitKey();
 }
 
@@ -654,6 +664,8 @@ void crop(cv::Rect rect, cv::Mat src, int index) {
 }
 
 int main() { 
+	//landmark_test();
+	//return 0;
 	//view3dTest();
 	poseEstimateTest();
 	return 0;
