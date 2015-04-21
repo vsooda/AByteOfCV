@@ -16,7 +16,7 @@ class EsrShape {
 public:
 	EsrShape(const char* faceName, const char* shapeName, int landmarkNum = 74);
 	~EsrShape();
-	void  detect(const cv::Mat& src);
+	bool  detect(const cv::Mat& src);
 	void  draw(cv::Mat& src);
 	cv::Mat getInitShape();  //1 * landmark * 2 
 	std::vector<cv::Point2f> getFilterPts();
@@ -50,7 +50,7 @@ EsrShape::EsrShape(const char* faceName, const char* shapeName, int landmarkNum)
 EsrShape::~EsrShape() {
 }
 
-void  EsrShape::detect(const cv::Mat& src)
+bool EsrShape::detect(const cv::Mat& src)
 {
 	_pts.clear();
 	dlib::array2d<dlib::rgb_pixel> img;
@@ -61,7 +61,7 @@ void  EsrShape::detect(const cv::Mat& src)
 	std::vector<dlib::rectangle> dets;
 	dets = _detector(img);
 	if (dets.size() <= 0) {
-		return;
+		return false;
 	}
 	_rect = cv::Rect(cv::Point(dets[0].left(), dets[0].top()), cv::Point(dets[0].right(), dets[0].bottom()));
 	dlib::rectangle det(_rect.x, _rect.y, _rect.x + _rect.width, _rect.y + _rect.height);
@@ -93,6 +93,7 @@ void  EsrShape::detect(const cv::Mat& src)
 		}
 	}
 	delete pimg;
+	return true;
 }
 
 

@@ -89,6 +89,7 @@
     <ClInclude Include="doCheck.h" />
     <ClInclude Include="esrShape.h" />
     <ClInclude Include="estimatePos.h" />
+    <ClInclude Include="HeadPose.h" />
     <ClInclude Include="view3d.h" />
   </ItemGroup>
   <ItemGroup>
