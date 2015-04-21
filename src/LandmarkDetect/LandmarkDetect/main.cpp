@@ -634,11 +634,11 @@ void poseEstimateTest() {
 	}
 }
 
-void view3dTest() {
-	View3D v3d("D:/data/base.ply", "D:/data/pt.txt");
-	v3d.showRotate();
-	//v3d.test();
-}
+//void view3dTest() {
+//	View3D v3d("D:/data/base.ply", "D:/data/pt.txt");
+//	v3d.showRotate();
+//	//v3d.test();
+//}
 
 void crop(cv::Rect rect, cv::Mat src, int index) {
 	rect.x = rect.x - rect.width / 4;

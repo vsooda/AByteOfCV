@@ -17,8 +17,8 @@ class EstimatePos {
 public:
 	EstimatePos(const char* facemodel, const char* shapemodel, const char* plyname, const char* indexName, int landnum = 74) {
 		pesr_ = new EsrShape(facemodel, shapemodel, landnum);
-		pv3d_ = new View3D(plyname, indexName, landnum);
 		php_ = new HeadPose(plyname, indexName, landnum);
+		pv3d_ = new View3D(php_->rawClound_, landnum);
 		landnum_ = landnum;
 		init();
 	}
@@ -57,7 +57,7 @@ void EstimatePos::init() {
 		php_->initShapePtmat_ = php_->singleColShape2ptmat(php_->initShape_);
 	}
 	else {
-		php_->initShapePtmat_ = pv3d_->getFrointfacePtmat();
+		php_->initShapePtmat_ = php_->getFrointfacePtmat();
 		php_->initShapePtmat_.row(1) = 1.0 - php_->initShapePtmat_.row(1);
 		php_->initShape_ = php_->ptmat2singleColsShape(php_->initShapePtmat_);
 	}
@@ -98,7 +98,11 @@ bool EstimatePos::doEstimatePos3d(const cv::Mat& src) {
 		return false;
 	}
 	php_->visualize();
-	pv3d_->searchBestAngle(php_->angleZ_, php_->angleX_, php_->angleY_, php_->detPtMat_);
+	php_->searchBestAngle(php_->angleZ_, php_->angleX_, php_->angleY_, php_->detPtMat_);
+	cv::Affine3f pose = php_->computePose(php_->angleX_, php_->angleY_, php_->angleZ_);
+	php_->renderAndSet2dPtmat();
+	cv::imshow("project", php_->view2d_);
+	pv3d_->update(pose);
 	std::cout << "estimate result: " << php_->angleZ_ * 180.0 / CV_PI << " " << php_->angleY_ * 180.0 / CV_PI << " " << php_->angleX_ * 180.0 / CV_PI << std::endl;
 	return true;
 }
