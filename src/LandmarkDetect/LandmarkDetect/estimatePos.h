@@ -22,6 +22,15 @@ public:
 		landnum_ = landnum;
 		init();
 	}
+
+	EstimatePos(const char* facemodel, const char* shapemodel, const char* selectCloudName, int landnum = 74) {
+		pesr_ = new EsrShape(facemodel, shapemodel, landnum);
+		php_ = new HeadPose(selectCloudName, landnum);
+		pv3d_ = new View3D(php_->rawClound_, landnum);
+		landnum_ = landnum;
+		init();
+	}
+
 	EstimatePos(const char* facemodel, const char* shapemodel, int landnum = 74) {
 		pesr_ = new EsrShape(facemodel, shapemodel, landnum);
 		landnum_ = landnum;
@@ -98,7 +107,9 @@ bool EstimatePos::doEstimatePos3d(const cv::Mat& src) {
 		return false;
 	}
 	php_->visualize();
+	clock_t a = clock();
 	php_->searchBestAngle(php_->angleZ_, php_->angleX_, php_->angleY_, php_->detPtMat_);
+	std::cout << "searching time: " <<  (clock() - a) * 1000.0 / CLOCKS_PER_SEC << std::endl;
 	cv::Affine3f pose = php_->computePose(php_->angleX_, php_->angleY_, php_->angleZ_);
 	php_->renderAndSet2dPtmat();
 	cv::imshow("project", php_->view2d_);

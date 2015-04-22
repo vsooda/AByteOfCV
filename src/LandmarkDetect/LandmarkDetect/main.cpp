@@ -618,7 +618,8 @@ void landmark_test() {
 void poseEstimateTest() {
 	//EstimatePos ep("frontface.dat", "D:/data/74.yaml");
 	//EstimatePos ep("frontface.dat", "D:/data/74.yaml", "D:/data/base.ply", "D:/data/pt.txt");
-	EstimatePos ep("frontface.dat", "D:/data/sp.dat", "D:/data/base.ply", "D:/data/pt.txt");
+	//EstimatePos ep("frontface.dat", "D:/data/sp.dat", "D:/data/base.ply", "D:/data/pt.txt");
+	EstimatePos ep("frontface.dat", "D:/data/sp.dat", "selectCloud.yml");
 	std::vector<string> names;
 	string dir;
 	int cnt = readDir("D:/wkdir/helen_3/*.jpg", names, dir);

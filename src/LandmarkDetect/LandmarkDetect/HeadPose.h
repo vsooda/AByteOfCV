@@ -9,6 +9,7 @@
 #include <opencv2/viz/vizcore.hpp>
 #include <fstream>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/opencv.hpp>
 #include <cmath>
 
 class HeadPose {
@@ -19,12 +20,23 @@ public:
 		landnum_ = landnum;
 		rawClound_ = readPlyData(plyname_);
 		selectClound_ = selectPlyData(rawClound_, selectIndex_);
+
 		setFrontfacePtmat();
 		initAxisIndex();
 		isSelectPtsError_ = false;
 	}
 
-	void show2dProject(cv::Mat dstView, cv::Mat srcmat);
+	HeadPose(const char* selectCountYml, int landnum = 74) {
+		landnum_ = landnum;
+		cv::FileStorage fsSelect(selectCountYml, cv::FileStorage::READ);
+		fsSelect["selectCloud"] >> selectClound_;
+		cv::FileStorage fsRaw("rawCloud.yml", cv::FileStorage::READ);
+		fsRaw["rawCloud"] >> rawClound_;
+
+		setFrontfacePtmat();
+		initAxisIndex();
+		isSelectPtsError_ = false;
+	}
 
 	//change vector point  or mat point to the uniform format .
 	cv::Mat pts2Mat(const std::vector<cv::Point2f> pts);
@@ -418,7 +430,7 @@ void HeadPose::setXaxisIndex(std::vector<int> indexs) {
 void HeadPose::searchYaxis() {
 	float angle = -0.5;
 	float minError = 10000000;
-	float delta = 0.01;
+	float delta = 0.03;
 	while (angle < 0.5) {
 		setCurrentPtmat(angleX_, angle, angleZ_);
 		float yerror = computeYError(ptmat2d_, detMatInverse_);
@@ -434,7 +446,7 @@ void HeadPose::searchYaxis() {
 void HeadPose::searchXaxis() {
 	float angle = -0.5;
 	float minError = 10000000;
-	float delta = 0.01;
+	float delta = 0.03;
 	while (angle < 0.5) {
 		setCurrentPtmat(angle, angleY_, angleZ_);
 		float xerror = computeXError(ptmat2d_, detMatInverse_);

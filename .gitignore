@@ -10,3 +10,4 @@ Debug
 Release
 HeadPosePnP
 pca
+*.yml

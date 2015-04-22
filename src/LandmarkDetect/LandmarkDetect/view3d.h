@@ -19,8 +19,6 @@ public:
 	{
 		objWindow_.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem());
 		transform_ = cv::viz::makeTransformToGlobal(cv::Vec3f(-1.0f, 0.0f, 0.0f), cv::Vec3f(0.0f, -1.0f, 0.0f), cv::Vec3f(0.0f, 0.0f, -1.0f), camPosition_);
-		
-		//cv::viz::WCloud cloud_widget(selectClound_, cv::viz::Color::green());
 		cv::viz::WCloud cloud_widget(rawClound, cv::viz::Color::green());
 		cv::Affine3f cloud_pose = cv::Affine3f().translate(cv::Vec3f(0.0f, 0.0f, 0.0f));
 		cv::Affine3f cloud_pose_global = transform_ * cloud_pose;
@@ -42,35 +40,6 @@ public:
 		objWindow_.spinOnce(1, true);
 	}
 
-
-	/*void test() {
-		angleX_ = 0.5;
-		computePose(angleX_, angleY_, angleZ_);
-		renderAndSet2dPtmat();
-		update();
-		cv::waitKey();
-		}*/
-
-	/*void showRotate() {
-		while (!objWindow_.wasStopped()) {
-		int cnt = 0;
-		for (int i = 2; i >= 0; i--) {
-		cnt = 0;
-		while (!objWindow_.wasStopped())
-		{
-		if (cnt++ > 20) {
-		break;
-		}
-		angleX_ = CV_PI * 0.005f * cnt;
-		computePose(angleX_, angleY_, angleZ_);
-		renderAndSet2dPtmat();
-		update();
-		}
-		}
-		}
-		}
-		*/
-	
 
 	void setAngleX(float angle) {
 		angleX_ = angle;
