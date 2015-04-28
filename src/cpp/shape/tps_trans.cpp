@@ -323,6 +323,7 @@ void ThinPlateSplineShapeTransformerImpl::estimateTransformation(InputArray _pts
 void ThinPlateSplineShapeTransformerImpl::estimationTransformation1(cv::Mat shape1, cv::Mat shape2) {
     //Mat shape1((int)matches.size(),2,CV_32F); // transforming shape
     //Mat shape2((int)matches.size(),2,CV_32F); // target shape
+    
     shape1.convertTo(shape1, CV_32F);
     shape2.convertTo(shape2, CV_32F);
 
@@ -374,7 +375,7 @@ void ThinPlateSplineShapeTransformerImpl::estimationTransformation1(cv::Mat shap
     
     //std::cout << "matL: " << matL << std::endl;
     //std::cout << "matB: " << matB << std::endl;
-    std::cout << matL.size() << " " << matB.size() << std::endl;
+    //std::cout << matL.size() << " " << matB.size() << std::endl;
 
     //Obtaining transformation params (w|a)
     //solve(matL, matB, tpsParameters, DECOMP_LU);

@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LandmarkDetect", "LandmarkDetect\LandmarkDetect.vcxproj", "{32BB7E2A-C338-4580-A004-F775987D7E03}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pca", "pca\pca.vcxproj", "{FAE29584-42AD-4A41-A550-5FD0E94E2846}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -15,6 +17,10 @@ Global
 		{32BB7E2A-C338-4580-A004-F775987D7E03}.Debug|Win32.Build.0 = Debug|Win32
 		{32BB7E2A-C338-4580-A004-F775987D7E03}.Release|Win32.ActiveCfg = Release|Win32
 		{32BB7E2A-C338-4580-A004-F775987D7E03}.Release|Win32.Build.0 = Release|Win32
+		{FAE29584-42AD-4A41-A550-5FD0E94E2846}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FAE29584-42AD-4A41-A550-5FD0E94E2846}.Debug|Win32.Build.0 = Debug|Win32
+		{FAE29584-42AD-4A41-A550-5FD0E94E2846}.Release|Win32.ActiveCfg = Release|Win32
+		{FAE29584-42AD-4A41-A550-5FD0E94E2846}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

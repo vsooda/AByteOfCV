@@ -11,7 +11,7 @@
 #include "../pixel.h"
 #include <opencv2/core/core.hpp>
 
-#define LANDMARK_NUM  68
+#define LANDMARK_NUM  74
 using dlib::matrix;
 using dlib::rectangle;
 using dlib::vector;
@@ -118,10 +118,10 @@ namespace dlib1
 				assert(node.type() == cv::FileNode::MAP);
 				splits = std::vector<split_feature>(15);
 				cv::FileNode split_nodes = node["split"];
-				//leaf_values = std::vector<matrix<float, 136, 1> >(16);
+				//leaf_values = std::vector<matrix<float, LANDMARK_NUM * 2, 1> >(16);
 				for (int i = 0; i < 16; i++) {
 					matrix<float, 0, 1> temp;
-					temp.set_size(136, 1);
+					temp.set_size(LANDMARK_NUM * 2, 1);
 					leaf_values.push_back(temp);
 				}
 				cv::FileNodeIterator it = split_nodes.begin(), it_end = split_nodes.end();
@@ -136,7 +136,7 @@ namespace dlib1
 				//std::cout << leafMat.size() << std::endl;
 				for (int i = 0; i < leafMat.cols; i++) { //16列
 					//matrix<float, 0, 1> temp;
-					//temp.set_size(136, 1);
+					//temp.set_size(LANDMARK_NUM * 2, 1);
 					for (int j = 0; j < leafMat.rows; j++) {
 						leaf_values[i](j) = leafMat.at<float>(j, i);
 						//temp(j, 1) = leafMat.at<float>(j, i);
@@ -154,7 +154,7 @@ namespace dlib1
 					fs  << splits[i];
 				}
 				fs << "]";
-				cv::Mat leafMat(136, 16, CV_32FC1);
+				cv::Mat leafMat(LANDMARK_NUM * 2, 16, CV_32FC1);
 				for (int i = 0; i < leafMat.cols; i++) {
 					for (int j = 0; j < leafMat.rows; j++) {
 						//每个叶子一列
@@ -472,7 +472,7 @@ namespace dlib1
         {
             using namespace impl;
 			matrix<float, 0, 1> current_shape;
-			current_shape.set_size(136, 1);
+			current_shape.set_size(LANDMARK_NUM * 2, 1);
 			current_shape = initial_shape;
             std::vector<float> feature_pixel_values;
             for (int iter = 0; iter < forests.size(); ++iter)
@@ -525,13 +525,13 @@ namespace dlib1
 
 		void read(const cv::FileNode& node) {
 			assert(node.type() == cv::FileNode::MAP);
-			//cv::Mat shape0(136, 1, CV_32FC1); 
+			//cv::Mat shape0(LANDMARK_NUM * 2, 1, CV_32FC1); 
 			cv::Mat shape0;
 			node["init_shape"] >> shape0;
-			initial_shape.set_size(136, 1);
-			//dlib::matrix<float, 136, 1> temp;
+			initial_shape.set_size(LANDMARK_NUM * 2, 1);
+			//dlib::matrix<float, LANDMARK_NUM * 2, 1> temp;
 			//initial_shape = temp;
-			for (int i = 0; i < 136; i++) {
+			for (int i = 0; i < LANDMARK_NUM * 2; i++) {
 				initial_shape(i) = shape0.at<float>(i, 0);
 			}
 			std::cout << "initial_shape:: " << initial_shape.size() << std::endl;
@@ -592,9 +592,9 @@ namespace dlib1
 
 		void write(cv::FileStorage& fs) const {
 			assert(fs.isOpened());
-			cv::Mat shape0(136, 1, CV_32FC1);
+			cv::Mat shape0(LANDMARK_NUM * 2, 1, CV_32FC1);
 			fs << "{";
-			for (int i = 0; i < 136; i++) {
+			for (int i = 0; i < LANDMARK_NUM * 2; i++) {
 				shape0.at<float>(i, 0) = initial_shape(i);
 			}
 			fs << "init_shape" << shape0;

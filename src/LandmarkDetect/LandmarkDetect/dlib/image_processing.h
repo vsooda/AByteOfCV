@@ -16,6 +16,7 @@
 #include "image_processing/scan_fhog_pyramid.h"
 #include "image_processing/shape_predictor.h"
 #include "image_processing/shape_predictor1.h"
+#include "image_processing/shape_predictor2.h"
 
 #endif // DLIB_IMAGE_PROCESSInG_H_h_
 

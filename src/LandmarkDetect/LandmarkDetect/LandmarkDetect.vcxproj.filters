@@ -27,9 +27,30 @@
     <ClInclude Include="dlib\image_processing\shape_predictor1.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="esrShape.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="estimatePos.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="view3d.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="doCheck.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="AffineTransform.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="HeadPose.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="doCheck.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
